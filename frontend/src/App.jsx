@@ -1,20 +1,36 @@
 import { useEffect, useState } from 'react'
 
 function App() {
-  const [data, setData] = useState("Connecting...")
+  const [message, setMessage] = useState("Loading...")
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Notice we only use '/api/test' because of the proxy we set up
+    // We use the proxy path '/api/test'
     fetch('/api/test')
-      .then(res => res.json())
-      .then(data => setData(data.message))
-      .catch(err => setData("Connection failed."));
-  }, [])
+      .then(response => {
+        if (!response.ok) throw new Error("Network response was not ok");
+        return response.json(); // STEP 1: Parse to JSON
+      })
+      .then(data => {
+        console.log("Success! Data received:", data);
+        setMessage(data.message); // STEP 2: Update State
+      })
+      .catch(err => {
+        console.error("Fetch error:", err);
+        setError(err.message);
+      });
+  }, []); // STEP 3: Ensure this empty array is here
 
   return (
-    <div>
-      <h1>My Local App</h1>
-      <p>Server Status: <strong>{data}</strong></p>
+    <div style={{ padding: '20px' }}>
+      <h1>Status Check</h1>
+      {error ? (
+        <p style={{ color: 'red' }}>Error: {error}</p>
+      ) : (
+        <p>Server Message: <strong>{message}</strong></p>
+      )}
     </div>
   )
 }
+
+export default App
