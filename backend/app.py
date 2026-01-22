@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, redirect, render_template
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -12,6 +12,18 @@ def get_activity():
         "activity": "WALKING",
         "status": "online"
     })
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    return jsonify({
+        "message": "Login successful",
+        "email": email,
+        "token": "your-auth-token-here"
+    }), 200
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

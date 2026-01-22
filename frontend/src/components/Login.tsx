@@ -18,10 +18,20 @@ const Login: React.FC = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    console.log("Validated Login Data:", data);
-    // Proceed with authentication logic
-  };
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    console.log("Login response:", result);
+    // Handle success/error here
+  } catch (error) {
+    console.error("Login error:", error);
+  }
+};
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
