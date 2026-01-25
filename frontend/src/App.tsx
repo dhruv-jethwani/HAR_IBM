@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-// 1. Import your Dashboard component (check the file path)
 import { Dashboard } from './components/Dashboard'; 
 
 interface ApiResponse {

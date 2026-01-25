@@ -24,6 +24,18 @@ def login():
         "token": "your-auth-token-here"
     }), 200
 
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    full_name = data.get('fullName')
+    email = data.get('email')
+    
+    return jsonify({
+        "message": "Registration successful",
+        "user": full_name,
+        "email": email
+    }), 201
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
