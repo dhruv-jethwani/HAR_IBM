@@ -16,12 +16,17 @@ db = SQLAlchemy()
 db.init_app(app)
 
 class User(UserMixin, db.Model):
-    #add model of name, email and password
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
 
     @staticmethod
     def check_user(email):
-        #DB query for searching for user in the database.
-        pass #remove this line after adding logic
+        # DB query for searching for user in the database.
+        return User.query.filter_by(email=email).first()
 
 @app.route('/api/test')
 def get_activity():
