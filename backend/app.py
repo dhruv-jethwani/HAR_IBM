@@ -3,11 +3,23 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from PIL import Image
+import os
 
 app = Flask(__name__)
 # This line tells Flask to allow requests from your React app
 CORS(app)
+# Upload folder configuration
+UPLOAD_FOLDER = 'static'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -72,6 +84,35 @@ def register():
     db.session.commit()
     return jsonify({"message": "User created successfully"}), 201
 
+@app.route('/upload_image', methods=['POST'])  # Note: Remove '/api/' prefix to match frontend
+def upload_image():
+    if 'image' not in request.files:
+        return jsonify({"error": "No image part"}), 400
+    
+    file = request.files['image']
+    
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Invalid file type"}), 400
+    
+    try:
+        img = Image.open(file)
+        
+        # Save image
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        img.save(filepath)
+        
+        # TODO: Run your HAR model here for prediction
+        predicted_label = "WALKING"  # Replace with actual model output
+        
+        return jsonify({"label": predicted_label}), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Error: {str(e)}"}), 500
+    
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
