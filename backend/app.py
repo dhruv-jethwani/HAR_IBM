@@ -6,12 +6,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from PIL import Image
 import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load .env from project root (one level above `backend/`)
+ROOT_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT_DIR / '.env')
 
 app = Flask(__name__)
 # This line tells Flask to allow requests from your React app
 CORS(app)
-# Upload folder configuration
-UPLOAD_FOLDER = r'C:\Users\dhruv\Documents\Project(Clg)\Sem8\HAR_IBM\backend\static'
+# Upload folder configuration (read from .env or fall back to backend/static)
+UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', str(Path(__file__).resolve().parent / 'static'))
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -21,7 +27,14 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+MYSQL_USER = os.getenv('MYSQL_USER', 'root')
+MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password')
+MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+MYSQL_DB = os.getenv('MYSQL_DB', 'har_ibm')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy()
@@ -112,6 +125,34 @@ def upload_image():
     
     except Exception as e:
         return jsonify({"error": f"Error: {str(e)}"}), 500
+
+@app.route("/api/users", methods=["GET"])
+def fetch_users():
+    users = User.query.all()
+    result = []
+
+    for user in users:
+        result.append({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        })
+
+    return jsonify({
+        "total_users": len(result),
+        "users": result
+    })
+
+@app.route("/api/check-db", methods=["GET"])
+def check_db():
+    try:
+        users = User.query.all()
+        return jsonify({
+            "status": "Database connected",
+            "user_count": len(users)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     
 if __name__ == "__main__":
     with app.app_context():
