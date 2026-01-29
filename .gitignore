@@ -1,2 +1,3 @@
 instance
 backend/static
+.env
