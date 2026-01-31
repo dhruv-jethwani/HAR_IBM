@@ -1,73 +1,131 @@
-# React + TypeScript + Vite
+# HAR_IBM (Harmony Activity Recognition) ✅
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Short description:** HAR_IBM is a Human Activity Recognition prototype that combines a Flask backend with a React + TypeScript frontend. The app currently supports user registration/login and image uploads for activity analysis (model integration is pending). 
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Project status (what's done)
+- **Backend (Flask)** ✅
+  - User model with hashed passwords (SQLAlchemy + Flask-Login)
+  - Endpoints: `/api/register`, `/api/login`, `/api/users`, `/api/check-db`, `/api/test` ✅
+  - Image upload endpoint: `/upload_image` (accepts JPG/PNG/GIF; saves file and returns a placeholder prediction) ✅
+  - Environment config via `.env` and database connection using **MySQL (pymysql)** ✅
 
-## React Compiler
+- **Frontend (React + TypeScript + Vite + Tailwind)** ✅
+  - Login and Registration forms with validation (Zod + react-hook-form) ✅
+  - `Dashboard` with `UploadSection` for sending images to backend ✅
+  - Client-side UI & state handling: results display and error states ✅
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Dependencies / tools in use:** Flask, Flask-CORS, Flask-SQLAlchemy, Pillow, python-dotenv, React, TypeScript, Vite, Tailwind, react-hook-form, zod.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## ⚙️ What still needs work / TODOs
+- Integrate the real HAR model to replace the placeholder prediction (`predicted_label = "WALKING"`). 🔧
+- Align API response shapes (e.g., `/api/test` currently returns `{ activity, status }` while frontend expects `{ message }`). ⚠️
+- Add proper migrations (Flask-Migrate) and DB schema/versioning.
+- Improve authentication (sessions → token-based or secure sessions), add access control.
+- Add backend tests, frontend tests, and CI (GitHub Actions).
+- Add Docker setup for reproducible local/dev deployment.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 📦 Tech Stack
+- Backend: Python, Flask, SQLAlchemy, MySQL (pymysql), Pillow
+- Frontend: React, TypeScript, Vite, Tailwind CSS, react-hook-form, Zod
+- Dev tools: dotenv, ESLint, TypeScript
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 🔧 Local setup (quick start)
+Prerequisites: Python 3.10+, Node.js (18+), MySQL
+
+1. Clone repository
+
+```bash
+git clone <your-repo-url>
+cd HAR_IBM
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. Backend setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd backend
+python -m venv .venv
+# activate .venv (Windows)
+.\.venv\Scripts\activate
+pip install -r requirements.txt
 ```
+
+Create a `.env` file in the project root (one level above `backend/`) with these keys as a minimum:
+
+```env
+SECRET_KEY=your_secret_key_here
+MYSQL_USER=your_db_user
+MYSQL_PASSWORD=your_db_password
+MYSQL_HOST=localhost
+MYSQL_DB=har_ibm
+UPLOAD_FOLDER=backend/static
+```
+
+Run the Flask app:
+
+```bash
+python app.py
+# Dev server runs on http://127.0.0.1:5000 by default
+```
+
+> Note: On first run the app will call `db.create_all()` to create tables if they do not exist.
+
+3. Frontend setup
+
+```bash
+cd ../frontend
+npm install
+npm run dev
+# Open the URL shown by Vite (default: http://localhost:5173)
+```
+
+---
+
+## 🧪 How to test features
+- Register a new user via the **Register** page (frontend). The backend will create a user in MySQL.
+- Login using the credentials (frontend posts to `/api/login`).
+- Upload an image from the **Dashboard → Analyze Image** section. The image is posted to `http://127.0.0.1:5000/upload_image`. The backend currently returns a placeholder label.
+
+---
+
+## 🛠 API Reference (quick)
+- GET `/api/test` — basic backend status (returns activity + status)
+- POST `/api/register` — register: JSON { fullName, email, password, confirmPassword }
+- POST `/api/login` — login: JSON { email, password }
+- POST `/upload_image` — multipart form upload: field `image` (returns `{ label }`)
+- GET `/api/users` — list users
+- GET `/api/check-db` — db connection check
+
+---
+
+## ✅ Tips & Notes
+> - The frontend's `UploadSection` posts directly to `http://127.0.0.1:5000/upload_image` (not `/api/upload_image`). Keep that in mind if you change routes or enable reverse proxy.
+> - CORS is enabled in the backend for local development.
+
+---
+
+## 🤝 Contributing
+- Open issues for bugs or feature requests.
+- Fork the repo, create a feature branch, add tests, and submit a PR.
+
+---
+
+## 📄 License
+Add a LICENSE file (suggest MIT) and update this section accordingly.
+
+---
+
+## ✉️ Contact
+If you want help polishing this repository for GitHub (badges, CI, Dockerfile, README improvements), open an issue or DM.
+
+---
+
+Thank you — ready to help update this README further (examples, screenshots, badges) if you want! 💡
+
