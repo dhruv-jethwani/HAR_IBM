@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Main Backgrounds */
+    --bg-main: 9 9 11;          /* zinc-950 */
+    --bg-muted: 24 24 27;       /* zinc-900 */
+
+    /* Borders & Accents */
+    --border-main: 39 39 42;    /* zinc-800 */
+    
+    /* Typography */
+    --text-main: 244 244 245;   /* zinc-100 */
+    --text-muted: 113 113 122;  /* zinc-500 */
+
+    /* Brand - Indigo */
+    --brand: 79 70 229;         /* indigo-600 */
+    --brand-hover: 99 102 241;  /* indigo-500 */
+  }
+
+  body {
+    @apply bg-[#09090b] text-zinc-100 antialiased selection:bg-indigo-500/30;
+    /* Use variables for flexibility */
+    background-color: rgb(var(--bg-main));
+    color: rgb(var(--text-main));
+  }
+}
+
+@layer components {
+  /* High-end Glass Container for Login/Dashboard Card */
+  .glass-card {
+    @apply rounded-[2rem] border border-zinc-800 bg-zinc-950/50 backdrop-blur-xl shadow-2xl;
+  }
+
+  /* Professional Input Fields */
+  .input-field {
+    @apply w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 
+           text-zinc-100 placeholder:text-zinc-600 outline-none transition-all 
+           focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
+  }
+
+  /* Primary Action Button */
+  .btn-brand {
+    @apply flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 
+           text-sm font-semibold text-white transition-all 
+           hover:bg-indigo-500 active:scale-[0.99] disabled:opacity-50;
+  }
+}
+
+@layer utilities {
+  /* Utility to remove scrollbars while keeping functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE/Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+}
