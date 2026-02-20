@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export const UploadSection: React.FC = () => {
   const [result, setResult] = useState<string>("");
+  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -10,16 +11,38 @@ export const UploadSection: React.FC = () => {
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError("Please upload a valid image file");
+      return;
+    }
+    
+    // Validate file size (max 16MB)
+    if (file.size > 16 * 1024 * 1024) {
+      setError("File size must be less than 16MB");
+      return;
+    }
+    
     setResult("");
+    setError("");
     setPreviewUrl(URL.createObjectURL(file));
     setLoading(true);
     const formData = new FormData();
     formData.append('image', file);
     try {
-      const res = await fetch('http://127.0.0.1:5000/upload_image', { method: 'POST', body: formData });
+      const res = await fetch('/upload_image', { method: 'POST', body: formData });
       const data = await res.json();
-      setResult(data.label || "No Label Detected");
-    } catch (err) { setResult("Server Error"); }
+      
+      if (res.ok) {
+        setResult(data.label || "No Label Detected");
+      } else {
+        setError(data.error || "Upload failed. Please try again.");
+      }
+    } catch (err) { 
+      setError("Network error. Please check your connection.");
+      console.error(err);
+    }
     finally { setLoading(false); }
   };
 
@@ -31,7 +54,7 @@ export const UploadSection: React.FC = () => {
             <div className="relative w-full h-full group/preview">
               <img src={previewUrl} alt="Target" className="w-full h-full object-contain rounded-xl" />
               <div className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover/preview:opacity-100 flex items-center justify-center gap-4 transition-all rounded-xl backdrop-blur-sm">
-                <button onClick={() => {setPreviewUrl(null); setResult("");}} className="px-5 py-2 bg-zinc-100 text-zinc-950 rounded-full text-xs font-bold">Discard</button>
+                <button onClick={() => {setPreviewUrl(null); setResult(""); setError("");}} className="px-5 py-2 bg-zinc-100 text-zinc-950 rounded-full text-xs font-bold">Discard</button>
               </div>
             </div>
           ) : (
@@ -51,7 +74,12 @@ export const UploadSection: React.FC = () => {
           )}
         </div>
       </div>
-      {result && !loading && (
+      {error && !loading && (
+        <div className="animate-in fade-in slide-in-from-top-4 p-4 rounded-xl border border-red-500/30 bg-red-500/10">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
+      {result && !loading && !error && (
         <div className="animate-in fade-in slide-in-from-top-4 p-6 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Classification Complete</p>

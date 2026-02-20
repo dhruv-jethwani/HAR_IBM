@@ -14,23 +14,32 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormValues) => {
+    setServerError(''); // Clear previous errors
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
+      const result = await response.json();
+      
       if (response.ok) {
         localStorage.setItem('auth_token', 'session_active'); 
         navigate('/home');
+      } else {
+        setServerError(result.error || 'Login failed. Please try again.');
       }
-    } catch (error) { console.error(error); }
+    } catch (error) { 
+      setServerError('An error occurred. Please try again later.');
+      console.error(error); 
+    }
   };
 
   return (
@@ -47,6 +56,7 @@ const Login: React.FC = () => {
             <p className="mt-2 text-sm text-zinc-400">Enter your details to continue</p>
           </div>
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+            {serverError && <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-3">{serverError}</div>}
             <div className="space-y-2">
               <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Email</label>
               <input {...register("email")} type="email" placeholder="name@gmail.com" className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 outline-none focus:border-indigo-500 transition-all" />

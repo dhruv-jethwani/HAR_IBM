@@ -19,16 +19,29 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
+    setServerError('');
     try {
-      console.log("Registering:", data);
-      navigate('/login');
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      
+      if (response.ok) {
+        navigate('/login');
+      } else {
+        setServerError(result.error || 'Registration failed. Please try again.');
+      }
     } catch (error) {
+      setServerError('An error occurred. Please try again later.');
       console.error(error);
     }
   };
@@ -58,6 +71,7 @@ const Register: React.FC = () => {
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+              {serverError && <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-3">{serverError}</div>}
               
               {/* Full Name */}
               <div className="space-y-2">
