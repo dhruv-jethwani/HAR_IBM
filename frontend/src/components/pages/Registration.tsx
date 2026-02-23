@@ -19,6 +19,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -41,10 +43,21 @@ const Register: React.FC = () => {
   };
 
   const onSubmit = async (data: RegisterFormValues) => {
+    setServerError('');
     try {
-      console.log("Registering:", data);
-      navigate('/login');
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (response.ok) {
+        navigate('/login');
+      } else {
+        setServerError(result.error || 'Registration failed. Please try again.');
+      }
     } catch (error) {
+      setServerError('An error occurred. Please try again later.');
       console.error(error);
     }
   };
@@ -93,23 +106,19 @@ const Register: React.FC = () => {
             </p>
           </div>
 
-            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-              
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-                  Full Name
-                </label>
-                <input
-                  {...register("fullName")}
-                  type="text"
-                  placeholder="Krish Patel"
-                  className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                />
-                {errors.fullName && (
-                  <p className="text-[13px] font-medium text-red-400/90">{errors.fullName.message}</p>
-                )}
+          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+            {serverError && (
+              <div className="error-box">
+                <p style={{ fontSize: '0.875rem', color: 'rgb(190 50 70)', margin: 0 }}>{serverError}</p>
               </div>
+            )}
+
+            {/* Full Name */}
+            <div className="animate-fade-up delay-100" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={labelStyle}>Full Name</label>
+              <input {...register("fullName")} type="text" placeholder="Krish Patel" className="input-light" />
+              {errors.fullName && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.fullName.message}</p>}
+            </div>
 
             {/* Email */}
             <div className="animate-fade-up delay-150" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

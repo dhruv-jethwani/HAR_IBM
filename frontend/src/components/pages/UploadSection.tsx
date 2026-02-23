@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 export const UploadSection: React.FC = () => {
   const [result, setResult] = useState<string>("");
+  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -11,10 +12,18 @@ export const UploadSection: React.FC = () => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
   }, [previewUrl]);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError("Please upload a valid image file");
+      return;
+    }
+    if (file.size > 16 * 1024 * 1024) {
+      setError("File size must be less than 16MB");
+      return;
+    }
+
     setResult("");
+    setError("");
     setPreviewUrl(URL.createObjectURL(file));
     setLoading(true);
 
@@ -22,11 +31,38 @@ export const UploadSection: React.FC = () => {
     formData.append('image', file);
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/upload_image', { method: 'POST', body: formData });
+      const res = await fetch('/upload_image', { method: 'POST', body: formData });
       const data = await res.json();
-      setResult(data.label || "No Label Detected");
-    } catch (err) { setResult("Server Error"); }
-    finally { setLoading(false); }
+      if (res.ok) {
+        setResult(data.label || "No Label Detected");
+      } else {
+        setError(data.error || "Upload failed. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
+  };
+
+  const handleDiscard = () => {
+    setPreviewUrl(null);
+    setResult("");
+    setError("");
+    if (inputRef.current) inputRef.current.value = '';
   };
 
   return (
@@ -46,10 +82,56 @@ export const UploadSection: React.FC = () => {
       >
         <div style={{ aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           {previewUrl ? (
-            <div className="relative w-full h-full group/preview">
-              <img src={previewUrl} alt="Target" className="w-full h-full object-contain rounded-xl" />
-              <div className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover/preview:opacity-100 flex items-center justify-center gap-4 transition-all rounded-xl backdrop-blur-sm">
-                <button onClick={() => {setPreviewUrl(null); setResult("");}} className="px-5 py-2 bg-zinc-100 text-zinc-950 rounded-full text-xs font-bold">Discard</button>
+            /* Preview */
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <img
+                src={previewUrl}
+                alt="Target"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  borderRadius: '1rem',
+                  transition: 'filter 0.3s ease',
+                }}
+              />
+              {/* Hover overlay */}
+              <div
+                className="preview-overlay"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'rgba(250,249,247,0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '1rem',
+                  opacity: 0,
+                  transition: 'opacity 0.2s ease',
+                  backdropFilter: 'blur(4px)',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+              >
+                <button
+                  onClick={handleDiscard}
+                  style={{
+                    padding: '0.625rem 1.5rem',
+                    background: 'rgb(20 18 16)',
+                    color: 'white',
+                    borderRadius: '999px',
+                    border: 'none',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif",
+                    transition: 'background 0.2s ease',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgb(60 55 50)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'rgb(20 18 16)')}
+                >
+                  Discard image
+                </button>
               </div>
             </div>
           ) : (
@@ -131,11 +213,59 @@ export const UploadSection: React.FC = () => {
           )}
         </div>
       </div>
-      {result && !loading && (
-        <div className="animate-in fade-in slide-in-from-top-4 p-6 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Classification Complete</p>
-            <h3 className="text-3xl font-bold text-white italic">{result}</h3>
+
+      {/* Error */}
+      {error && !loading && (
+        <div className="error-box">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem' }}>
+            <svg style={{ width: '16px', height: '16px', color: 'rgb(190 50 70)', flexShrink: 0, marginTop: '1px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p style={{ fontSize: '0.875rem', color: 'rgb(190 50 70)', margin: 0 }}>{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Result */}
+      {result && !loading && !error && (
+        <div className="success-box animate-result">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 800, color: 'rgb(99 91 255)', letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 0.375rem' }}>
+                Classification Complete
+              </p>
+              <h3
+                style={{
+                  fontFamily: "'DM Serif Display', serif",
+                  fontSize: '2rem',
+                  fontWeight: 400,
+                  color: 'rgb(20 18 16)',
+                  fontStyle: 'italic',
+                  letterSpacing: '-0.02em',
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                {result}
+              </h3>
+            </div>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: 'rgba(99,91,255,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'rgb(99 91 255)',
+                flexShrink: 0,
+              }}
+            >
+              <svg style={{ width: '22px', height: '22px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
           </div>
         </div>
       )}

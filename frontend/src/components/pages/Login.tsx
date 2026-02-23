@@ -14,6 +14,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -37,17 +39,24 @@ const Login: React.FC = () => {
   };
 
   const onSubmit = async (data: LoginFormValues) => {
+    setServerError('');
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
+      const result = await response.json();
       if (response.ok) {
         localStorage.setItem('auth_token', 'session_active');
         navigate('/home');
+      } else {
+        setServerError(result.error || 'Login failed. Please try again.');
       }
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      setServerError('An error occurred. Please try again later.');
+      console.error(error);
+    }
   };
 
   return (
@@ -85,11 +94,28 @@ const Login: React.FC = () => {
               Sign in to continue to HAR-Cloud
             </p>
           </div>
-          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Email</label>
-              <input {...register("email")} type="email" placeholder="name@gmail.com" className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 outline-none focus:border-indigo-500 transition-all" />
-              {errors.email && <p className="text-[13px] text-red-400/90">{errors.email.message}</p>}
+
+          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {serverError && (
+              <div className="error-box animate-slide-down">
+                <p style={{ fontSize: '0.875rem', color: 'rgb(190 50 70)', margin: 0 }}>{serverError}</p>
+              </div>
+            )}
+
+            {/* Email */}
+            <div className="animate-fade-up delay-100" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(100 95 88)' }}>
+                Email
+              </label>
+              <input
+                {...register("email")}
+                type="email"
+                placeholder="name@company.com"
+                className="input-light"
+              />
+              {errors.email && (
+                <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.email.message}</p>
+              )}
             </div>
 
             {/* Password */}
