@@ -1,60 +1,471 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Serif+Display:ital@0;1&display=swap');
 
 @layer base {
   :root {
-    /* Main Backgrounds */
-    --bg-main: 9 9 11;          /* zinc-950 */
-    --bg-muted: 24 24 27;       /* zinc-900 */
+    --bg-main: 250 249 247;
+    --bg-card: 255 255 255;
+    --bg-muted: 245 244 241;
+    --bg-subtle: 238 236 232;
 
-    /* Borders & Accents */
-    --border-main: 39 39 42;    /* zinc-800 */
-    
-    /* Typography */
-    --text-main: 244 244 245;   /* zinc-100 */
-    --text-muted: 113 113 122;  /* zinc-500 */
+    --border-main: 220 216 210;
+    --border-focus: 99 91 255;
 
-    /* Brand - Indigo */
-    --brand: 79 70 229;         /* indigo-600 */
-    --brand-hover: 99 102 241;  /* indigo-500 */
+    --text-main: 20 18 16;
+    --text-muted: 100 95 88;
+    --text-subtle: 160 155 148;
+
+    --brand: 99 91 255;
+    --brand-hover: 75 67 220;
+    --brand-soft: 240 239 255;
+
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.06);
+    --shadow-brand: 0 8px 32px rgba(99,91,255,0.25);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-[#09090b] text-zinc-100 antialiased selection:bg-indigo-500/30;
-    /* Use variables for flexibility */
+    font-family: 'DM Sans', sans-serif;
     background-color: rgb(var(--bg-main));
+    color: rgb(var(--text-main));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: rgba(99, 91, 255, 0.15);
     color: rgb(var(--text-main));
   }
 }
 
-@layer components {
-  /* High-end Glass Container for Login/Dashboard Card */
-  .glass-card {
-    @apply rounded-[2rem] border border-zinc-800 bg-zinc-950/50 backdrop-blur-xl shadow-2xl;
-  }
-
-  /* Professional Input Fields */
-  .input-field {
-    @apply w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 
-           text-zinc-100 placeholder:text-zinc-600 outline-none transition-all 
-           focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
-  }
-
-  /* Primary Action Button */
-  .btn-brand {
-    @apply flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 
-           text-sm font-semibold text-white transition-all 
-           hover:bg-indigo-500 active:scale-[0.99] disabled:opacity-50;
-  }
+/* ================================
+   KEYFRAME ANIMATIONS
+================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-@layer utilities {
-  /* Utility to remove scrollbars while keeping functionality */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none;  /* IE/Edge */
-    scrollbar-width: none;     /* Firefox */
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes floatOrb {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-20px) scale(1.02); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99,91,255,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(99,91,255,0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: 0.3; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@keyframes borderPulse {
+  0%, 100% { border-color: rgba(99,91,255,0.3); }
+  50%       { border-color: rgba(99,91,255,0.8); }
+}
+
+@keyframes resultAppear {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.98); }
+  60%  { transform: translateY(-3px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ================================
+   ANIMATION UTILITY CLASSES
+================================ */
+.animate-fade-up {
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+  opacity: 0;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-result {
+  animation: resultAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* ================================
+   BACKGROUND ORBS
+================================ */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: floatOrb 8s ease-in-out infinite;
+}
+
+.orb-violet {
+  background: radial-gradient(circle, rgba(99,91,255,0.12) 0%, transparent 70%);
+}
+
+.orb-amber {
+  background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%);
+  animation-delay: -3s;
+  animation-duration: 10s;
+}
+
+.orb-rose {
+  background: radial-gradient(circle, rgba(244,63,94,0.07) 0%, transparent 70%);
+  animation-delay: -5s;
+  animation-duration: 12s;
+}
+
+/* ================================
+   GRID TEXTURE OVERLAY
+================================ */
+.grid-texture {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+}
+
+/* ================================
+   GLASS & CARD COMPONENTS
+================================ */
+.card-light {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(220, 216, 210, 0.8);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.card-inner {
+  background: rgb(var(--bg-muted));
+  border: 1px solid rgb(var(--border-main));
+  border-radius: 1rem;
+}
+
+/* ================================
+   INPUT FIELDS
+================================ */
+.input-light {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1.5px solid rgb(var(--border-main));
+  background: rgb(var(--bg-card));
+  padding: 0.75rem 1rem;
+  color: rgb(var(--text-main));
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.input-light::placeholder {
+  color: rgb(var(--text-subtle));
+}
+
+.input-light:focus {
+  border-color: rgb(var(--brand));
+  box-shadow: 0 0 0 3px rgba(99,91,255,0.12), var(--shadow-sm);
+  background: #fff;
+}
+
+/* ================================
+   BRAND BUTTON
+================================ */
+.btn-brand-light {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border-radius: 0.75rem;
+  background: rgb(var(--brand));
+  padding: 0.875rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: var(--shadow-brand);
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.btn-brand-light:hover {
+  background: rgb(var(--brand-hover));
+  transform: translateY(-1px);
+  box-shadow: 0 12px 40px rgba(99,91,255,0.35);
+}
+
+.btn-brand-light:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--shadow-brand);
+}
+
+.btn-brand-light:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Ripple effect on button click */
+.btn-brand-light .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+}
+
+/* ================================
+   LOGO MARK
+================================ */
+.logo-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgb(var(--brand)) 0%, #8B7CF6 100%);
+  box-shadow: 0 4px 16px rgba(99,91,255,0.3), 0 1px 4px rgba(99,91,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1rem;
+  font-style: italic;
+  font-family: 'DM Serif Display', serif;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.logo-mark:hover {
+  transform: scale(1.05) rotate(-2deg);
+  box-shadow: 0 8px 28px rgba(99,91,255,0.4);
+}
+
+/* ================================
+   STATUS BADGE
+================================ */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 999px;
+  border: 1px solid rgba(99,91,255,0.2);
+  background: rgba(99,91,255,0.06);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--brand));
+}
+
+.status-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+}
+
+.status-dot-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgb(var(--brand));
+}
+
+.status-dot-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgb(var(--brand));
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* ================================
+   SHIMMER LOADING STATE
+================================ */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--bg-muted)) 0%,
+    rgba(255,255,255,0.8) 50%,
+    rgb(var(--bg-muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ================================
+   ERROR & SUCCESS STATES
+================================ */
+.error-box {
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(244,63,94,0.25);
+  background: rgba(244,63,94,0.06);
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.success-box {
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(99,91,255,0.2);
+  background: linear-gradient(135deg, rgba(99,91,255,0.04) 0%, rgba(139,124,246,0.04) 100%);
+  animation: resultAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ================================
+   SIDEBAR NAV ITEMS
+================================ */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(var(--text-muted));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-item:hover {
+  color: rgb(var(--text-main));
+  background: rgb(var(--bg-muted));
+  border-color: rgb(var(--border-main));
+}
+
+.nav-item.active {
+  color: rgb(var(--brand));
+  background: rgb(var(--brand-soft));
+  border-color: rgba(99,91,255,0.2);
+  font-weight: 600;
+}
+
+/* ================================
+   UPLOAD DROP ZONE
+================================ */
+.drop-zone {
+  border: 2px dashed rgb(var(--border-main));
+  border-radius: 1.25rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.drop-zone:hover {
+  border-color: rgba(99,91,255,0.4);
+  background: rgba(99,91,255,0.02);
+}
+
+.drop-zone.drag-over {
+  border-color: rgb(var(--brand));
+  background: rgba(99,91,255,0.04);
+  animation: borderPulse 1s ease infinite;
+}
+
+/* ================================
+   SPINNER
+================================ */
+.spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid rgba(99,91,255,0.15);
+  border-top-color: rgb(var(--brand));
+  animation: spin 0.8s linear infinite;
+}
+
+/* ================================
+   DIVIDER
+================================ */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--border-main)), transparent);
+}
+
+/* ================================
+   HEADING GRADIENT
+================================ */
+.heading-gradient {
+  background: linear-gradient(135deg, rgb(var(--text-main)) 0%, rgb(var(--brand)) 60%, #A78BFA 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+}
+
+/* ================================
+   SCROLL BEHAVIOR
+================================ */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

@@ -1,3 +1,6 @@
+import datetime
+import jwt
+
 from flask import Flask, jsonify, request, redirect, render_template
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -30,7 +33,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 # Database configuration
-MYSQL_USER = os.getenv('MYSQL_USER', 'Dhruv')
+MYSQL_USER = os.getenv('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password')
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
 MYSQL_DB = os.getenv('MYSQL_DB', 'har_ibm')
@@ -65,6 +68,28 @@ def get_activity():
         "activity": "WALKING",
         "status": "online"
     })
+
+@app.route('/api/chatbot-token', methods=['POST'])
+def get_chatbot_token():
+    # In a real app, you'd get the user from a session or auth header
+    data = request.get_json()
+    email = data.get('email')
+    user = User.check_user(email)
+    
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    secret = os.getenv('CHATBOT_IDENTITY_SECRET') # Put your secret in .env
+    
+    payload = {
+        "user_id": str(user.id),
+        "email": user.email,
+        "name": user.name, # This allows the bot to say "Hi Krish!"
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    }
+    
+    token = jwt.encode(payload, secret, algorithm='HS256')
+    return jsonify({"token": token})
 
 @app.route('/api/login', methods=['POST'])
 def login():

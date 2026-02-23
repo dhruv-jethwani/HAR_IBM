@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,6 +24,22 @@ const Register: React.FC = () => {
     resolver: zodResolver(registerSchema),
   });
 
+  const handleBtnClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 2;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.cssText = `
+      width: ${size}px; height: ${size}px;
+      left: ${e.clientX - rect.left - size / 2}px;
+      top: ${e.clientY - rect.top - size / 2}px;
+    `;
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 700);
+  };
+
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       console.log("Registering:", data);
@@ -33,29 +49,49 @@ const Register: React.FC = () => {
     }
   };
 
+  const labelStyle: React.CSSProperties = {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+    color: 'rgb(100 95 88)',
+  };
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#09090b] px-4 font-sans antialiased selection:bg-indigo-500/30">
-      
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-indigo-500/10 blur-[120px]"></div>
-        <div className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-blue-500/10 blur-[120px]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+    <div
+      className="relative flex min-h-screen items-center justify-center px-4 py-8"
+      style={{ background: 'rgb(250 249 247)', fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {/* Background orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="orb orb-violet" style={{ width: '700px', height: '700px', top: '-200px', right: '-150px' }} />
+        <div className="orb orb-rose" style={{ width: '500px', height: '500px', bottom: '-80px', left: '-80px' }} />
+        <div className="grid-texture absolute inset-0" />
       </div>
 
       <div className="relative z-10 w-full max-w-[480px]">
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/50 backdrop-blur-md shadow-2xl">
-          
-          <div className="px-10 pt-12 pb-10">
+        <div className="card-light animate-scale-in" style={{ padding: '2.75rem 2.5rem' }}>
 
-            {/* Branding */}
-            <div className="mb-8 flex flex-col items-center">
-              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.2)]">
-                <span className="text-xl font-bold text-indigo-500 italic"> HAR </span>
-              </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
-                Create your account
-              </h1>
-            </div>
+          {/* Branding */}
+          <div className="flex flex-col items-center mb-9 animate-fade-up">
+            <div className="logo-mark mb-5">HAR</div>
+            <h1
+              style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontSize: '1.875rem',
+                fontWeight: 400,
+                color: 'rgb(20 18 16)',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                margin: 0,
+              }}
+            >
+              Create your account
+            </h1>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'rgb(100 95 88)' }}>
+              Join HAR-Cloud to get started
+            </p>
+          </div>
 
             <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
               
@@ -75,92 +111,98 @@ const Register: React.FC = () => {
                 )}
               </div>
 
-              {/* Email */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-                  Work Email
-                </label>
-                <input
-                  {...register("email")}
-                  type="email"
-                  placeholder="name@gmail.com"
-                  className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                />
-                {errors.email && (
-                  <p className="text-[13px] font-medium text-red-400/90">{errors.email.message}</p>
-                )}
+            {/* Email */}
+            <div className="animate-fade-up delay-150" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={labelStyle}>Work Email</label>
+              <input {...register("email")} type="email" placeholder="name@company.com" className="input-light" />
+              {errors.email && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.email.message}</p>}
+            </div>
+
+            {/* Password grid */}
+            <div className="animate-fade-up delay-200">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={labelStyle}>Password</label>
+                  <input {...register("password")} type={showPassword ? "text" : "password"} placeholder="••••••••" className="input-light" />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={labelStyle}>Confirm</label>
+                  <input {...register("confirmPassword")} type={showPassword ? "text" : "password"} placeholder="••••••••" className="input-light" />
+                </div>
               </div>
 
-              {/* Password Group */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-                    Password
-                  </label>
-                  <input
-                    {...register("password")}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-                    Confirm
-                  </label>
-                  <input
-                    {...register("confirmPassword")}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                  />
-                </div>
-              </div>
-              
-              {/* Error messages for passwords */}
               {(errors.password || errors.confirmPassword) && (
-                <div className="space-y-1">
-                  {errors.password && <p className="text-[13px] font-medium text-red-400/90">{errors.password.message}</p>}
-                  {errors.confirmPassword && <p className="text-[13px] font-medium text-red-400/90">{errors.confirmPassword.message}</p>}
+                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  {errors.password && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.password.message}</p>}
+                  {errors.confirmPassword && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.confirmPassword.message}</p>}
                 </div>
               )}
 
-              <div className="flex items-center">
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-xs font-medium text-zinc-400 hover:text-indigo-400 transition-colors flex items-center gap-2"
-                >
-                  {showPassword ? "Hide passwords" : "Show passwords"}
-                </button>
-              </div>
-
               <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  marginTop: '0.5rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  color: 'rgb(99 91 255)',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  {showPassword
+                    ? <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+                    : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
+                  }
+                </svg>
+                {showPassword ? "Hide passwords" : "Show passwords"}
+              </button>
+            </div>
+
+            {/* Submit */}
+            <div className="animate-fade-up delay-300" style={{ marginTop: '0.25rem' }}>
+              <button
+                ref={btnRef}
+                type="submit"
                 disabled={isSubmitting}
-                className="relative mt-2 flex w-full items-center justify-center overflow-hidden rounded-lg bg-indigo-600 px-4 py-4 text-sm font-semibold text-white transition-all hover:bg-indigo-500 active:scale-[0.99] disabled:opacity-50"
+                className="btn-brand-light"
+                onClick={handleBtnClick}
               >
                 {isSubmitting ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                ) : (
-                  "Create free account"
-                )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                    <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
+                    <span>Creating account…</span>
+                  </div>
+                ) : "Create free account"}
               </button>
-            </form>
-
-            <div className="mt-10 text-center">
-              <p className="text-sm text-zinc-500">
-                Already have an account?{" "}
-                <Link to="/login" className="font-medium text-zinc-200 hover:text-indigo-400 transition-colors">
-                  Log in here
-                </Link>
-              </p>
             </div>
-          </div>
+          </form>
+
+          <div className="divider animate-fade-up delay-400" style={{ margin: '1.75rem 0' }} />
+
+          <p className="animate-fade-up delay-500" style={{ textAlign: 'center', fontSize: '0.875rem', color: 'rgb(130 125 118)', margin: 0 }}>
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              style={{ fontWeight: 600, color: 'rgb(99 91 255)', textDecoration: 'none', transition: 'opacity 0.15s ease' }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+            >
+              Log in here
+            </Link>
+          </p>
         </div>
-        
-        <div className="mt-8 flex justify-center space-x-6 text-[12px] font-medium text-zinc-600">
-          <span className="cursor-default">© 2026 HAR UI</span>
-        </div>
+
+        <p className="animate-fade-in delay-500" style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(190 185 178)' }}>
+          © 2026 HAR UI · Secure Registration
+        </p>
       </div>
     </div>
   );
