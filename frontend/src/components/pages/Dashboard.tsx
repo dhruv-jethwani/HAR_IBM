@@ -238,7 +238,7 @@ export const Dashboard = () => {
           </div>
 
           <p className="animate-fade-in delay-400" style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgb(180 175 168)' }}>
-            Secure Cloud Processing · Powered by Harmony AI
+            Secure Cloud Processing · Powered by HAR
           </p>
         </div>
       </main>
