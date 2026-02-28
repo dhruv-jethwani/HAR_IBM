@@ -1,12 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export const UploadSection: React.FC = () => {
   const [result, setResult] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }; }, [previewUrl]);
+  useEffect(() => {
+    return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
+  }, [previewUrl]);
+
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError("Please upload a valid image file");
+      return;
+    }
+    if (file.size > 16 * 1024 * 1024) {
+      setError("File size must be less than 16MB");
+      return;
+    }
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -28,8 +42,10 @@ export const UploadSection: React.FC = () => {
     setError("");
     setPreviewUrl(URL.createObjectURL(file));
     setLoading(true);
+
     const formData = new FormData();
     formData.append('image', file);
+
     try {
       const res = await fetch('/upload_image', { method: 'POST', body: formData });
       const data = await res.json();
@@ -47,9 +63,21 @@ export const UploadSection: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col gap-8">
-      <div className="relative group overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-900/20 backdrop-blur-sm transition-all hover:border-indigo-500/50">
-        <div className="aspect-video flex items-center justify-center p-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Drop Zone */}
+      <div
+        className={`drop-zone ${dragOver ? 'drag-over' : ''}`}
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          background: dragOver ? 'rgba(99,91,255,0.03)' : 'rgb(250 249 247)',
+          transition: 'all 0.3s ease',
+        }}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+      >
+        <div style={{ aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           {previewUrl ? (
             <div className="relative w-full h-full group/preview">
               <img src={previewUrl} alt="Target" className="w-full h-full object-contain rounded-xl" />
@@ -58,18 +86,80 @@ export const UploadSection: React.FC = () => {
               </div>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer border-2 border-dashed border-zinc-800 rounded-3xl group-hover:border-indigo-500/30">
-              <div className="mb-4 h-14 w-14 flex items-center justify-center rounded-xl bg-zinc-900 text-zinc-500 group-hover:text-indigo-400 transition-all">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+            /* Upload prompt */
+            <label
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer', padding: '2rem' }}
+            >
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
+                  background: dragOver ? 'rgba(99,91,255,0.08)' : 'white',
+                  border: '1px solid rgb(220 216 210)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1rem',
+                  transition: 'all 0.3s ease',
+                  color: dragOver ? 'rgb(99 91 255)' : 'rgb(140 135 128)',
+                }}
+              >
+                <svg style={{ width: '26px', height: '26px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
               </div>
-              <p className="text-sm font-semibold text-zinc-200">Drop photo here</p>
-              <input type="file" onChange={handleFile} className="hidden" accept="image/*" />
+
+              <p style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'rgb(40 38 35)', margin: '0 0 0.25rem' }}>
+                {dragOver ? "Drop to analyze" : "Drop photo here"}
+              </p>
+              <p style={{ fontSize: '0.8125rem', color: 'rgb(160 155 148)', margin: 0 }}>
+                or{' '}
+                <span style={{ color: 'rgb(99 91 255)', fontWeight: 600 }}>browse files</span>
+                {' '}· PNG, JPG up to 16MB
+              </p>
+
+              <input ref={inputRef} type="file" onChange={handleFile} style={{ display: 'none' }} accept="image/*" />
             </label>
           )}
+
+          {/* Loading overlay */}
           {loading && (
-            <div className="absolute inset-0 z-20 bg-zinc-950/40 backdrop-blur-sm flex flex-col items-center justify-center">
-              <div className="h-12 w-12 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
-              <p className="mt-4 text-[10px] font-bold text-indigo-400 uppercase tracking-widest animate-pulse">Neural Scan In Progress</p>
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(250,249,247,0.88)',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '1.125rem',
+                zIndex: 10,
+              }}
+            >
+              <div className="spinner" style={{ marginBottom: '1rem' }} />
+              <p style={{ fontSize: '0.6875rem', fontWeight: 800, color: 'rgb(99 91 255)', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+                Neural Scan In Progress
+              </p>
+              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '4px' }}>
+                {[0, 1, 2, 3, 4].map(i => (
+                  <div
+                    key={i}
+                    style={{
+                      width: '4px',
+                      height: '16px',
+                      borderRadius: '2px',
+                      background: 'rgb(99 91 255)',
+                      opacity: 0.3,
+                      animation: `ping 1s ease-in-out ${i * 0.15}s infinite`,
+                      transformOrigin: 'center',
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
