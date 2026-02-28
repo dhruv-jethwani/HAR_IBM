@@ -12,15 +12,45 @@ export const UploadSection: React.FC = () => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
   }, [previewUrl]);
 
-  const processFile = async (file: File) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    
     if (!file.type.startsWith('image/')) {
       setError("Please upload a valid image file");
       return;
     }
+    
     if (file.size > 16 * 1024 * 1024) {
       setError("File size must be less than 16MB");
       return;
     }
+    
+    setResult("");
+    setError("");
+    setPreviewUrl(URL.createObjectURL(file));
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await fetch('/upload_image', { method: 'POST', body: formData });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setResult(data.label || "No Label Detected");
+      } else {
+        setError(data.error || "Upload failed. Please try again.");
+      }
+    } catch (err) { 
+      setError("Network error. Please check your connection.");
+      console.error(err);
+    }
+    finally { setLoading(false); }
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

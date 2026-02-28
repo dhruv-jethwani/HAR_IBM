@@ -6,7 +6,6 @@ interface ApiResponse {
 }
 
 const App: React.FC = () => {
-  const [data, setData] = useState<string>("Connecting...");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -14,9 +13,6 @@ const App: React.FC = () => {
       .then((res) => {
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         return res.json() as Promise<ApiResponse>;
-      })
-      .then((json) => {
-        setData(json.message);
       })
       .catch((err: Error) => {
         console.error("Fetch error:", err);

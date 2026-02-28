@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,6 +15,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string>('');
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -98,13 +99,13 @@ const Login: React.FC = () => {
             {serverError && <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-3">{serverError}</div>}
             <div className="space-y-2">
               <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Email</label>
-              <input {...register("email")} type="email" placeholder="name@gmail.com" className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 outline-none focus:border-indigo-500 transition-all" />
+              <input {...register("email")} type="email" placeholder="name@gmail.com" className="block w-full rounded-lg border border-zinc-800 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-indigo-500 transition-all" />
               {errors.email && <p className="text-[13px] text-red-400/90">{errors.email.message}</p>}
             </div>
 
             {/* Password */}
             <div className="animate-fade-up delay-200" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(100 95 88)' }}>
+              <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(255, 255, 255)' }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
