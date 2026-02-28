@@ -20,7 +20,6 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string>('');
-  const btnRef = useRef<HTMLButtonElement>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -51,6 +50,7 @@ const Register: React.FC = () => {
         body: JSON.stringify(data)
       });
       const result = await response.json();
+      
       if (response.ok) {
         navigate('/login');
       } else {
@@ -85,26 +85,24 @@ const Register: React.FC = () => {
       <div className="relative z-10 w-full max-w-[480px]">
         <div className="card-light animate-scale-in" style={{ padding: '2.75rem 2.5rem' }}>
 
-          {/* Branding */}
-          <div className="flex flex-col items-center mb-9 animate-fade-up">
-            <div className="logo-mark mb-5">HAR</div>
-            <h1
-              style={{
-                fontFamily: "'DM Serif Display', serif",
-                fontSize: '1.875rem',
-                fontWeight: 400,
-                color: 'rgb(20 18 16)',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.2,
-                margin: 0,
-              }}
-            >
-              Create your account
-            </h1>
-            <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'rgb(100 95 88)' }}>
-              Join HAR-Cloud to get started
-            </p>
-          </div>
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+              {serverError && <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-3">{serverError}</div>}
+              
+              {/* Full Name */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+                  Full Name
+                </label>
+                <input
+                  {...register("fullName")}
+                  type="text"
+                  placeholder="Krish Patel"
+                  className="block w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+                />
+                {errors.fullName && (
+                  <p className="text-[13px] font-medium text-red-400/90">{errors.fullName.message}</p>
+                )}
+              </div>
 
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
             {serverError && (

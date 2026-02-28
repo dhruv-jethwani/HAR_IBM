@@ -94,48 +94,71 @@ def get_chatbot_token():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
     email = data.get('email')
     password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+    
     user = User.check_user(email)
 
-    if user and user.verify_password(password):
+    if not user:
+        return jsonify({"error": "User does not exist"}), 401
+    
+    if user.verify_password(password):
         return jsonify({"message": "Login successful"}), 200
     else:
-        return jsonify({"error": "Invalid email or password"}), 401
-
-    
+        return jsonify({"error": "Invalid password"}), 401
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
     name = data.get('fullName')
     email = data.get('email')
     password = data.get('password')
     confirm_pass = data.get('confirmPassword')
+    
+    # Validate all fields are provided
+    if not all([name, email, password, confirm_pass]):
+        return jsonify({"error": "All fields are required"}), 400
+    
+    # Validate email format
+    if '@' not in email:
+        return jsonify({"error": "Please enter a valid email address"}), 400
 
     if User.check_user(email):
         return jsonify({"error": "Email already registered"}), 400
     if password != confirm_pass:
         return jsonify({"error": "Passwords don't match"}), 400
     
-    hashed_password = generate_password_hash(password)
-    new_user = User(name=name, email=email, password=hashed_password)
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"message": "User created successfully"}), 201
+    try:
+        hashed_password = generate_password_hash(password)
+        new_user = User(name=name, email=email, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"message": "User created successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "An error occurred during registration"}), 500
 
 @app.route('/upload_image', methods=['POST'])  # Note: Remove '/api/' prefix to match frontend
 def upload_image():
     if 'image' not in request.files:
-        return jsonify({"error": "No image part"}), 400
+        return jsonify({"error": "No image file provided"}), 400
     
     file = request.files['image']
     
     if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+        return jsonify({"error": "No file selected"}), 400
     
     if not allowed_file(file.filename):
-        return jsonify({"error": "Invalid file type"}), 400
+        return jsonify({"error": "Invalid file type. Allowed: PNG, JPG, JPEG, GIF"}), 400
     
     try:
         img = Image.open(file)
@@ -151,7 +174,9 @@ def upload_image():
         return jsonify({"label": predicted_label}), 200
     
     except Exception as e:
-        return jsonify({"error": f"Error: {str(e)}"}), 500
+        # Don't expose internal error details to frontend
+        print(f"Upload error: {str(e)}")
+        return jsonify({"error": "Failed to process image. Please try a different file."}), 500
 
 @app.route("/api/users", methods=["GET"])
 def fetch_users():
