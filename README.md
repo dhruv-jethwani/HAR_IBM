@@ -1,4 +1,4 @@
-# HAR_IBM (Harmony Activity Recognition) ✅
+# HAR_IBM (Human Activity Recognition) ✅
 
 **Short description:** HAR_IBM is a Human Activity Recognition prototype that combines a Flask backend with a React + TypeScript frontend. The app currently supports user registration/login and image uploads for activity analysis (model integration is pending). 
 
@@ -43,7 +43,7 @@ Prerequisites: Python 3.10+, Node.js (18+), MySQL
 1. Clone repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/dhruv-jethwani/HAR_IBM.git
 cd HAR_IBM
 ```
 
