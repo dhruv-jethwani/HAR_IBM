@@ -37,7 +37,7 @@ export const UploadSection: React.FC = () => {
     formData.append('image', file);
 
     try {
-      const res = await fetch('/upload_image', { method: 'POST', body: formData });
+      const res = await fetch('http://localhost:5000/upload_image', { method: 'POST', body: formData });
       const data = await res.json();
       
       if (res.ok) {
@@ -77,7 +77,7 @@ export const UploadSection: React.FC = () => {
     formData.append('image', file);
 
     try {
-      const res = await fetch('/upload_image', { method: 'POST', body: formData });
+      const res = await fetch('http://localhost:5000/upload_image', { method: 'POST', body: formData });
       const data = await res.json();
       
       if (res.ok) {
@@ -203,7 +203,7 @@ export const UploadSection: React.FC = () => {
         <div className="animate-in fade-in slide-in-from-top-4 p-6 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Classification Complete</p>
-            <h3 className="text-3xl font-bold text-white italic">{result}</h3>
+            <h3 className="text-3xl font-bold italic capitalize text-purple-300">{result}</h3>
           </div>
         </div>
       )}

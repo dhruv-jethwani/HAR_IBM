@@ -1,53 +1,61 @@
 import datetime
 import jwt
-
-from flask import Flask, jsonify, request, redirect, render_template
+import os
+import time
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from PIL import Image
-import os
 from dotenv import load_dotenv
 from pathlib import Path
+from gradio_client import Client, handle_file
 
+# 1. Setup Paths and Environment
 load_dotenv()
-# Load .env from project root (one level above `backend/`)
 ROOT_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT_DIR / '.env')
 
 app = Flask(__name__)
-# Secret key for session management (use .env SECRET_KEY)
 app.secret_key = os.getenv('SECRET_KEY', 'dev_secret_key')
-# This line tells Flask to allow requests from your React app
-CORS(app)
-# Upload folder configuration (read from .env or fall back to backend/static)
-UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', str(Path(__file__).resolve().parent / 'static'))
+
+# FIXED: Explicit CORS for React frontend
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+
+# 2. Folder Configuration
+# Ensures the path is absolute to avoid "missing" files
+BASE_PATH = Path(__file__).resolve().parent
+UPLOAD_FOLDER = os.path.join(BASE_PATH, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
 if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-# Database configuration
+
+# 3. Database Configuration
 MYSQL_USER = os.getenv('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password')
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
 MYSQL_DB = os.getenv('MYSQL_DB', 'har_ibm')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}"
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy()
 db.init_app(app)
 
+# 4. AI Model Client
+client = Client("darkangel106/har-api")
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -55,158 +63,110 @@ class User(UserMixin, db.Model):
 
     @staticmethod
     def check_user(email):
-        # DB query for searching for user in the database.
         return User.query.filter_by(email=email).first()
     
     def verify_password(self, password):
         return check_password_hash(self.password, password)
 
-@app.route('/api/test')
-def get_activity():
-    # In the future, this will be the output of your HAR image processing model
-    return jsonify({
-        "activity": "WALKING",
-        "status": "online"
-    })
+def predict_activity_from_cloud(image_path):
+    result = client.predict(
+        img=handle_file(image_path),
+        api_name="/predict"
+    )
+    prediction = result['label']
+    confidence = result['confidences'][0]['confidence']
+    return prediction, confidence
+
+# --- ROUTES ---
 
 @app.route('/api/chatbot-token', methods=['POST'])
 def get_chatbot_token():
-    # In a real app, you'd get the user from a session or auth header
     data = request.get_json()
     email = data.get('email')
-    user = User.check_user(email)
     
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
 
-    secret = os.getenv('CHATBOT_IDENTITY_SECRET') # Put your secret in .env
+    user = User.check_user(email)
+    if not user:
+        return jsonify({"error": "User not found"}), 401
+
+    secret = os.getenv('CHATBOT_IDENTITY_SECRET', 'your_temporary_dev_secret')
     
+    # FIXED: Use integer timestamp for 'exp' to avoid library conflicts
     payload = {
         "user_id": str(user.id),
         "email": user.email,
-        "name": user.name, # This allows the bot to say "Hi Krish!"
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        "name": user.name,
+        "iat": int(time.time()),
+        "exp": int(time.time()) + 3600  # Expires in 1 hour
     }
     
-    token = jwt.encode(payload, secret, algorithm='HS256')
-    return jsonify({"token": token})
+    try:
+        token = jwt.encode(payload, secret, algorithm='HS256')
+        return jsonify({"token": token})
+    except Exception as e:
+        print(f"JWT Error: {e}")
+        return jsonify({"error": "Internal Token Error"}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
+    if not data: return jsonify({"error": "No data provided"}), 400
     
-    email = data.get('email')
-    password = data.get('password')
-    
-    if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
-    
-    user = User.check_user(email)
-
-    if not user:
-        return jsonify({"error": "User does not exist"}), 401
-    
-    if user.verify_password(password):
-        return jsonify({"message": "Login successful"}), 200
-    else:
-        return jsonify({"error": "Invalid password"}), 401
+    user = User.check_user(data.get('email'))
+    if user and user.verify_password(data.get('password')):
+        return jsonify({
+            "message": "Login successful",
+            "email": user.email # Added for React localStorage
+        }), 200
+    return jsonify({"error": "Invalid credentials"}), 401
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
+    name, email, password = data.get('fullName'), data.get('email'), data.get('password')
     
-    name = data.get('fullName')
-    email = data.get('email')
-    password = data.get('password')
-    confirm_pass = data.get('confirmPassword')
-    
-    # Validate all fields are provided
-    if not all([name, email, password, confirm_pass]):
-        return jsonify({"error": "All fields are required"}), 400
-    
-    # Validate email format
-    if '@' not in email:
-        return jsonify({"error": "Please enter a valid email address"}), 400
-
     if User.check_user(email):
         return jsonify({"error": "Email already registered"}), 400
-    if password != confirm_pass:
-        return jsonify({"error": "Passwords don't match"}), 400
     
-    try:
-        hashed_password = generate_password_hash(password)
-        new_user = User(name=name, email=email, password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify({"message": "User created successfully"}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "An error occurred during registration"}), 500
+    hashed_password = generate_password_hash(password)
+    new_user = User(name=name, email=email, password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"message": "User created successfully"}), 201
 
-@app.route('/upload_image', methods=['POST'])  # Note: Remove '/api/' prefix to match frontend
+@app.route('/upload_image', methods=['POST'])
 def upload_image():
     if 'image' not in request.files:
         return jsonify({"error": "No image file provided"}), 400
     
     file = request.files['image']
-    
-    if file.filename == '':
-        return jsonify({"error": "No file selected"}), 400
-    
-    if not allowed_file(file.filename):
-        return jsonify({"error": "Invalid file type. Allowed: PNG, JPG, JPEG, GIF"}), 400
-    
-    try:
-        img = Image.open(file)
-        
-        # Save image
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        img.save(filepath)
-        
-        # TODO: Run your HAR model here for prediction
-        predicted_label = "WALKING"  # Replace with actual model output
-        
-        return jsonify({"label": predicted_label}), 200
-    
-    except Exception as e:
-        # Don't expose internal error details to frontend
-        print(f"Upload error: {str(e)}")
-        return jsonify({"error": "Failed to process image. Please try a different file."}), 500
+    if file and allowed_file(file.filename):
+        try:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # FIXED: Using file.save() is more reliable for storage
+            file.save(filepath)
+            
+            # Verify file exists before sending to cloud
+            if os.path.exists(filepath):
+                label, score = predict_activity_from_cloud(filepath)
+                return jsonify({"label": label, "score": float(score)}), 200
+            else:
+                return jsonify({"error": "File system error"}), 500
+                
+        except Exception as e:
+            print(f"Upload error: {str(e)}")
+            return jsonify({"error": "Processing failed"}), 500
+    return jsonify({"error": "Invalid file"}), 400
 
-@app.route("/api/users", methods=["GET"])
-def fetch_users():
-    users = User.query.all()
-    result = []
+# Route to see your uploaded images in browser
+@app.route('/static/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-    for user in users:
-        result.append({
-            "id": user.id,
-            "name": user.name,
-            "email": user.email
-        })
-
-    return jsonify({
-        "total_users": len(result),
-        "users": result
-    })
-
-
-@app.route("/api/check-db", methods=["GET"])
-def check_db():
-    try:
-        users = User.query.all()
-        return jsonify({
-            "status": "Database connected",
-            "user_count": len(users)
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

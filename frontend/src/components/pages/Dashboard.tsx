@@ -27,26 +27,41 @@ export const Dashboard = () => {
     }
 
     const loadChatbot = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/chatbot-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: localStorage.getItem('user_email') || 'user@example.com' })
-        });
-        if (response.ok) {
-          const { token } = await response.json();
-          window.chatbase('identify', { token });
-        }
-        const script = document.createElement("script");
-        script.src = "https://www.chatbase.co/embed.min.js";
-        script.id = "FBtkGNOjyE4Ww59qXSX5o";
-        script.setAttribute("domain", "www.chatbase.co");
-        script.async = true;
-        document.body.appendChild(script);
-      } catch (error) {
-        console.error("Failed to initialize Chatbot identity:", error);
+    const userEmail = localStorage.getItem('user_email');
+    
+    // Stop if no user is logged in
+    if (!userEmail) {
+      console.warn("No user email found, skipping chatbot identification.");
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/chatbot-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }) // Use actual email
+      });
+
+      if (response.ok) {
+        const { token } = await response.json();
+        // Identify user to Chatbase
+        window.chatbase('identify', { token });
+      } else {
+        console.error("Chatbot token request failed with status:", response.status);
       }
-    };
+
+      // Load the script regardless of token success
+      const script = document.createElement("script");
+      script.src = "https://www.chatbase.co/embed.min.js";
+      script.id = "FBtkGNOjyE4Ww59qXSX5o";
+      script.setAttribute("domain", "www.chatbase.co");
+      script.async = true;
+      document.body.appendChild(script);
+
+    } catch (error) {
+      console.error("Failed to initialize Chatbot identity:", error);
+    }
+  };
 
     loadChatbot();
 

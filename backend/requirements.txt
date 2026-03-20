@@ -6,3 +6,6 @@ Flask-Login
 python-dotenv
 pillow
 pymysql
+gradio_client
+jwt
+dotenv
