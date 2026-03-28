@@ -111,7 +111,7 @@ npm run dev
 - POST `/api/register` — register: JSON { fullName, email, password, confirmPassword }
 - POST `/api/login` — login: JSON { email, password }
 - POST `/upload_image` — multipart form upload: field image.
-  - **Returns**: { label, score, image_url, ticket_id }
+  - **Returns**: `{ label, score, image_url, ticket_id }`
 - GET `/api/users` — list users
 - GET `/api/check-db` — db connection check
 
