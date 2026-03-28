@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UploadSection } from './UploadSection';
+import { HistoryPanel } from '../HistoryPanel';
+
+interface HistoryItem {
+  id: string;
+  image: string;
+  prediction: string;
+  timestamp: Date;
+  confidence?: number;
+}
 
 declare global {
   interface Window { chatbase: any; }
@@ -9,6 +18,41 @@ declare global {
 export const Dashboard = () => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+
+  // Static history data with SVG placeholder images
+  const historyItems: HistoryItem[] = [
+    {
+      id: '1',
+      image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"%3E%3Crect fill="%23635BFF" width="400" height="300"/%3E%3Ctext x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="48" fill="white" font-weight="bold"%3EStanding%3C/text%3E%3Ccircle cx="200" cy="100" r="30" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="170" y="140" width="60" height="80" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="160" y="220" width="20" height="60" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="220" y="220" width="20" height="60" fill="rgba(255,255,255,0.3)"/%3E%3C/svg%3E',
+      prediction: 'Standing',
+      timestamp: new Date(Date.now() - 5 * 60000),
+      confidence: 0.95,
+    },
+    {
+      id: '2',
+      image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"%3E%3Crect fill="%23A855F7" width="400" height="300"/%3E%3Ctext x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="48" fill="white" font-weight="bold"%3EWalking%3C/text%3E%3Ccircle cx="160" cy="80" r="25" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="140" y="120" width="50" height="70" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="125" y="190" width="20" height="60" fill="rgba(255,255,255,0.3)" transform="rotate(-20 135 190)"/%3E%3Crect x="195" y="190" width="20" height="60" fill="rgba(255,255,255,0.3)" transform="rotate(20 205 190)"/%3E%3C/svg%3E',
+      prediction: 'Walking',
+      timestamp: new Date(Date.now() - 15 * 60000),
+      confidence: 0.92,
+    },
+    {
+      id: '3',
+      image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"%3E%3Crect fill="%2308B981" width="400" height="300"/%3E%3Ctext x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="48" fill="white" font-weight="bold"%3ESitting%3C/text%3E%3Ccircle cx="200" cy="90" r="28" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="170" y="130" width="60" height="60" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="155" y="190" width="25" height="50" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="220" y="190" width="25" height="50" fill="rgba(255,255,255,0.3)"/%3E%3C/svg%3E',
+      prediction: 'Sitting',
+      timestamp: new Date(Date.now() - 45 * 60000),
+      confidence: 0.98,
+    },
+    {
+      id: '4',
+      image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"%3E%3Crect fill="%23F59E0B" width="400" height="300"/%3E%3Ctext x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="48" fill="white" font-weight="bold"%3ERunning%3C/text%3E%3Ccircle cx="140" cy="70" r="24" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="120" y="110" width="45" height="65" fill="rgba(255,255,255,0.3)"/%3E%3Crect x="100" y="175" width="18" height="50" fill="rgba(255,255,255,0.3)" transform="rotate(-35 109 175)"/%3E%3Crect x="180" y="175" width="18" height="50" fill="rgba(255,255,255,0.3)" transform="rotate(35 189 175)"/%3E%3C/svg%3E',
+      prediction: 'Running',
+      timestamp: new Date(Date.now() - 2 * 60 * 60000),
+      confidence: 0.88,
+    },
+  ];
+
+  const selectedItem = historyItems.find(item => item.id === selectedHistoryId);
 
   useEffect(() => {
     setMounted(true);
@@ -101,6 +145,7 @@ export const Dashboard = () => {
           boxShadow: '1px 0 12px rgba(0,0,0,0.04)',
           zIndex: 20,
           flexShrink: 0,
+          overflow: 'hidden',
         }}
       >
         {/* Top */}
@@ -114,7 +159,7 @@ export const Dashboard = () => {
           </div>
 
           {/* Nav */}
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1.5rem' }}>
             <p style={{ padding: '0 0.75rem', marginBottom: '0.5rem', fontSize: '0.625rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgb(180 175 168)' }}>
               Platform
             </p>
@@ -125,14 +170,12 @@ export const Dashboard = () => {
               </svg>
               Analysis
             </button>
-
-            <button className="nav-item">
-              <svg style={{ width: '16px', height: '16px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              History
-            </button>
           </nav>
+        </div>
+
+        {/* History Panel */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginBottom: '1.5rem' }}>
+          <HistoryPanel selectedId={selectedHistoryId} onSelectId={setSelectedHistoryId} />
         </div>
 
         {/* Logout */}
@@ -196,65 +239,197 @@ export const Dashboard = () => {
           <div className="grid-texture" style={{ position: 'absolute', inset: 0 }} />
         </div>
 
-        <div className={`relative z-10 w-full max-w-2xl ${mounted ? 'animate-fade-up' : 'opacity-0'}`}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <div className="status-badge" style={{ marginBottom: '1.25rem' }}>
-              <span className="status-dot">
-                <span className="status-dot-ping" />
-                <span className="status-dot-inner" />
-              </span>
-              Neural System Active
-            </div>
+        <div className={`relative z-10 w-full ${mounted ? 'animate-fade-up' : 'opacity-0'}`} style={{ maxWidth: selectedItem ? '900px' : '600px' }}>
+          {selectedItem ? (
+            // Expanded History View
+            <>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <button
+                  onClick={() => setSelectedHistoryId(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.75rem',
+                    background: 'rgba(255,255,255,0.7)',
+                    border: '1px solid rgba(220,216,210,0.8)',
+                    borderRadius: '0.75rem',
+                    cursor: 'pointer',
+                    color: 'rgb(100 95 88)',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    fontFamily: "'DM Sans', sans-serif",
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.9)';
+                    e.currentTarget.style.borderColor = 'rgba(200,190,180,0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.7)';
+                    e.currentTarget.style.borderColor = 'rgba(220,216,210,0.8)';
+                  }}
+                >
+                  <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Upload
+                </button>
+              </div>
 
-            <h2
-              style={{
-                fontFamily: "'DM Serif Display', serif",
-                fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
-                fontWeight: 400,
-                color: 'rgb(20 18 16)',
-                letterSpacing: '-0.03em',
-                lineHeight: 1.1,
-                margin: '0 0 1rem',
-              }}
-            >
-              Activity{' '}
-              <span className="heading-gradient">Analyzer</span>
-            </h2>
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.9)',
+                  border: '1px solid rgba(220,216,210,0.8)',
+                  borderRadius: '2rem',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
+                {/* Image Section */}
+                <div
+                  style={{
+                    width: '100%',
+                    aspectRatio: '16/10',
+                    background: 'rgb(230 227 220)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={selectedItem.image}
+                    alt={selectedItem.prediction}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </div>
 
-            <p style={{ color: 'rgb(120 115 108)', fontSize: '1.0625rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
-              Deploy high-fidelity computer vision to detect human activity sequences in real-time.
-            </p>
-          </div>
+                {/* Details Section */}
+                <div style={{ padding: '2rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                    {/* Prediction */}
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgb(180 175 168)', marginBottom: '0.75rem' }}>
+                        Activity Detected
+                      </div>
+                      <div style={{ fontSize: '1.875rem', fontWeight: 600, color: 'rgb(20 18 16)' }}>
+                        {selectedItem.prediction}
+                      </div>
+                    </div>
 
-          {/* Main card */}
-          <div
-            className="animate-fade-up delay-200"
-            style={{
-              background: 'rgba(255,255,255,0.9)',
-              border: '1px solid rgba(220,216,210,0.8)',
-              borderRadius: '2rem',
-              padding: '2rem',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              transition: 'box-shadow 0.3s ease, transform 0.3s ease',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 28px 80px rgba(99,91,255,0.12), 0 8px 28px rgba(0,0,0,0.05)';
-              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04)';
-              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-            }}
-          >
-            <UploadSection />
-          </div>
+                    {/* Confidence */}
+                    {selectedItem.confidence && (
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgb(180 175 168)', marginBottom: '0.75rem' }}>
+                          Confidence Score
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
+                          <div style={{ fontSize: '1.875rem', fontWeight: 600, color: 'rgb(99 91 255)' }}>
+                            {Math.round(selectedItem.confidence * 100)}%
+                          </div>
+                          <div
+                            style={{
+                              flex: 1,
+                              height: '8px',
+                              background: 'rgb(230 227 220)',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              marginBottom: '0.5rem',
+                            }}
+                          >
+                            <div
+                              style={{
+                                height: '100%',
+                                width: `${selectedItem.confidence * 100}%`,
+                                background: 'linear-gradient(90deg, rgb(99 91 255), rgb(168 85 247))',
+                                transition: 'width 0.3s ease',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-          <p className="animate-fade-in delay-400" style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgb(180 175 168)' }}>
-            Secure Cloud Processing · Powered by HAR
-          </p>
+                  {/* Timestamp */}
+                  <div style={{ paddingTop: '1.5rem', borderTop: '1px solid rgb(220 216 210)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgb(180 175 168)', marginBottom: '0.75rem' }}>
+                      Detection Time
+                    </div>
+                    <div style={{ fontSize: '1rem', color: 'rgb(100 95 88)', lineHeight: 1.6 }}>
+                      {selectedItem.timestamp.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            // Default Upload View
+            <>
+              {/* Header */}
+              <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                <div className="status-badge" style={{ marginBottom: '1.25rem' }}>
+                  <span className="status-dot">
+                    <span className="status-dot-ping" />
+                    <span className="status-dot-inner" />
+                  </span>
+                  Neural System Active
+                </div>
+
+                <h2
+                  style={{
+                    fontFamily: "'DM Serif Display', serif",
+                    fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
+                    fontWeight: 400,
+                    color: 'rgb(20 18 16)',
+                    letterSpacing: '-0.03em',
+                    lineHeight: 1.1,
+                    margin: '0 0 1rem',
+                  }}
+                >
+                  Activity{' '}
+                  <span className="heading-gradient">Analyzer</span>
+                </h2>
+
+                <p style={{ color: 'rgb(120 115 108)', fontSize: '1.0625rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
+                  Deploy high-fidelity computer vision to detect human activity sequences in real-time.
+                </p>
+              </div>
+
+              {/* Main card */}
+              <div
+                className="animate-fade-up delay-200"
+                style={{
+                  background: 'rgba(255,255,255,0.9)',
+                  border: '1px solid rgba(220,216,210,0.8)',
+                  borderRadius: '2rem',
+                  padding: '2rem',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  transition: 'box-shadow 0.3s ease, transform 0.3s ease',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = '0 28px 80px rgba(99,91,255,0.12), 0 8px 28px rgba(0,0,0,0.05)';
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = '0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04)';
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                }}
+              >
+                <UploadSection />
+              </div>
+
+              <p className="animate-fade-in delay-400" style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgb(180 175 168)' }}>
+                Secure Cloud Processing · Powered by HAR
+              </p>
+            </>
+          )}
         </div>
       </main>
     </div>
