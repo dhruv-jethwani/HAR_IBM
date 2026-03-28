@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-export const UploadSection: React.FC = () => {
+// 1. Added onUploadSuccess prop to trigger sidebar refresh
+interface UploadSectionProps {
+  onUploadSuccess?: () => void;
+}
+
+export const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess }) => {
   const [result, setResult] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -8,88 +13,73 @@ export const UploadSection: React.FC = () => {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 2. Get the logged-in user's email from localStorage
+  const userEmail = localStorage.getItem('user_email');
+
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
   }, [previewUrl]);
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+  const processUpload = async (file: File) => {
+    // Basic Validations
+    if (!file.type.startsWith('image/')) {
+      setError("Please upload a valid image file");
+      return;
+    }
+    if (file.size > 16 * 1024 * 1024) {
+      setError("File size must be less than 16MB");
+      return;
+    }
+    if (!userEmail) {
+      setError("User session not found. Please log in again.");
+      return;
+    }
+
+    setResult("");
+    setError("");
+    setPreviewUrl(URL.createObjectURL(file));
+    setLoading(true);
+
+    // 3. Prepare FormData with BOTH image and email
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('email', userEmail); // Backend uses this to link to User table
+
+    try {
+      const res = await fetch('http://localhost:5000/upload_image', { 
+        method: 'POST', 
+        body: formData 
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setResult(data.label || "No Label Detected");
+        
+        // 4. TRIGGER REFRESH: This tells Dashboard to re-fetch the history
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
+      } else {
+        setError(data.error || "Upload failed. Please try again.");
+      }
+    } catch (err) { 
+      setError("Network error. Is the Flask server running on port 5000?");
+      console.error(err);
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    
-    if (!file.type.startsWith('image/')) {
-      setError("Please upload a valid image file");
-      return;
-    }
-    
-    if (file.size > 16 * 1024 * 1024) {
-      setError("File size must be less than 16MB");
-      return;
-    }
-    
-    setResult("");
-    setError("");
-    setPreviewUrl(URL.createObjectURL(file));
-    setLoading(true);
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const res = await fetch('http://localhost:5000/upload_image', { method: 'POST', body: formData });
-      const data = await res.json();
-      
-      if (res.ok) {
-        setResult(data.label || "No Label Detected");
-      } else {
-        setError(data.error || "Upload failed. Please try again.");
-      }
-    } catch (err) { 
-      setError("Network error. Please check your connection.");
-      console.error(err);
-    }
-    finally { setLoading(false); }
+    if (file) processUpload(file);
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError("Please upload a valid image file");
-      return;
-    }
-    
-    // Validate file size (max 16MB)
-    if (file.size > 16 * 1024 * 1024) {
-      setError("File size must be less than 16MB");
-      return;
-    }
-    
-    setResult("");
-    setError("");
-    setPreviewUrl(URL.createObjectURL(file));
-    setLoading(true);
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const res = await fetch('http://localhost:5000/upload_image', { method: 'POST', body: formData });
-      const data = await res.json();
-      
-      if (res.ok) {
-        setResult(data.label || "No Label Detected");
-      } else {
-        setError(data.error || "Upload failed. Please try again.");
-      }
-    } catch (err) { 
-      setError("Network error. Please check your connection.");
-      console.error(err);
-    }
-    finally { setLoading(false); }
+    if (file) processUpload(file);
   };
 
   return (
@@ -102,6 +92,8 @@ export const UploadSection: React.FC = () => {
           overflow: 'hidden',
           background: dragOver ? 'rgba(99,91,255,0.03)' : 'rgb(250 249 247)',
           transition: 'all 0.3s ease',
+          borderRadius: '1.5rem',
+          border: dragOver ? '2px dashed rgb(99 91 255)' : '2px dashed rgb(220 216 210)'
         }}
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -109,101 +101,45 @@ export const UploadSection: React.FC = () => {
       >
         <div style={{ aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           {previewUrl ? (
-            <div className="relative w-full h-full group/preview">
-              <img src={previewUrl} alt="Target" className="w-full h-full object-contain rounded-xl" />
-              <div className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover/preview:opacity-100 flex items-center justify-center gap-4 transition-all rounded-xl backdrop-blur-sm">
-                <button onClick={() => {setPreviewUrl(null); setResult(""); setError("");}} className="px-5 py-2 bg-zinc-100 text-zinc-950 rounded-full text-xs font-bold">Discard</button>
-              </div>
+            <div className="relative w-full h-full" style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <img src={previewUrl} alt="Target" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '1rem' }} />
+              <button 
+                onClick={() => {setPreviewUrl(null); setResult(""); setError("");}} 
+                style={{ position: 'absolute', top: '10px', right: '10px', background: 'white', border: '1px solid #ccc', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer' }}
+              >✕</button>
             </div>
           ) : (
-            /* Upload prompt */
-            <label
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer', padding: '2rem' }}
-            >
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '16px',
-                  background: dragOver ? 'rgba(99,91,255,0.08)' : 'white',
-                  border: '1px solid rgb(220 216 210)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1rem',
-                  transition: 'all 0.3s ease',
-                  color: dragOver ? 'rgb(99 91 255)' : 'rgb(140 135 128)',
-                }}
-              >
-                <svg style={{ width: '26px', height: '26px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
+            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: '100%' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'white', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
               </div>
-
-              <p style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'rgb(40 38 35)', margin: '0 0 0.25rem' }}>
-                {dragOver ? "Drop to analyze" : "Drop photo here"}
-              </p>
-              <p style={{ fontSize: '0.8125rem', color: 'rgb(160 155 148)', margin: 0 }}>
-                or{' '}
-                <span style={{ color: 'rgb(99 91 255)', fontWeight: 600 }}>browse files</span>
-                {' '}· PNG, JPG up to 16MB
-              </p>
-
+              <p style={{ fontWeight: 600, margin: '0 0 4px' }}>Click or drop image</p>
+              <p style={{ fontSize: '0.8rem', color: '#888' }}>PNG, JPG up to 16MB</p>
               <input ref={inputRef} type="file" onChange={handleFile} style={{ display: 'none' }} accept="image/*" />
             </label>
           )}
 
-          {/* Loading overlay */}
+          {/* Neural Scan Loading Overlay */}
           {loading && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(250,249,247,0.88)',
-                backdropFilter: 'blur(8px)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '1.125rem',
-                zIndex: 10,
-              }}
-            >
-              <div className="spinner" style={{ marginBottom: '1rem' }} />
-              <p style={{ fontSize: '0.6875rem', fontWeight: 800, color: 'rgb(99 91 255)', letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
-                Neural Scan In Progress
-              </p>
-              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '4px' }}>
-                {[0, 1, 2, 3, 4].map(i => (
-                  <div
-                    key={i}
-                    style={{
-                      width: '4px',
-                      height: '16px',
-                      borderRadius: '2px',
-                      background: 'rgb(99 91 255)',
-                      opacity: 0.3,
-                      animation: `ping 1s ease-in-out ${i * 0.15}s infinite`,
-                      transformOrigin: 'center',
-                    }}
-                  />
-                ))}
-              </div>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
+              <div className="spinner" />
+              <p style={{ marginTop: '1rem', fontSize: '0.7rem', fontWeight: 800, color: 'rgb(99 91 255)', letterSpacing: '0.1em' }}>NEURAL SCAN IN PROGRESS</p>
             </div>
           )}
         </div>
       </div>
-      {error && !loading && (
-        <div className="animate-in fade-in slide-in-from-top-4 p-4 rounded-xl border border-red-500/30 bg-red-500/10">
-          <p className="text-sm text-red-400">{error}</p>
+
+      {error && (
+        <div style={{ padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '0.75rem', color: '#b91c1c', fontSize: '0.875rem' }}>
+          {error}
         </div>
       )}
-      {result && !loading && !error && (
-        <div className="animate-in fade-in slide-in-from-top-4 p-6 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] flex items-center justify-between">
+
+      {result && !loading && (
+        <div style={{ padding: '1.25rem', background: 'rgb(240 239 255)', border: '1px solid rgb(224 220 255)', borderRadius: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Classification Complete</p>
-            <h3 className="text-3xl font-bold italic capitalize text-purple-300">{result}</h3>
+            <p style={{ fontSize: '0.6rem', fontWeight: 900, color: 'rgb(99 91 255)', textTransform: 'uppercase', marginBottom: '4px' }}>Classification Complete</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'rgb(20 18 16)' }}>{result}</h3>
           </div>
         </div>
       )}

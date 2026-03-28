@@ -1,4 +1,7 @@
-import datetime
+from datetime import datetime
+import base64
+import requests
+import tempfile
 import jwt
 import os
 import time
@@ -22,7 +25,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev_secret_key')
 
 # FIXED: Explicit CORS for React frontend
-CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 2. Folder Configuration
 # Ensures the path is absolute to avoid "missing" files
@@ -44,6 +47,9 @@ MYSQL_USER = os.getenv('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password')
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
 MYSQL_DB = os.getenv('MYSQL_DB', 'har_ibm')
+IMGBB_API_KEY = os.getenv('IMGBB_API_KEY')
+FRESHSERVICE_DOMAIN = os.getenv('FRESHSERVICE_DOMAIN')
+FRESHSERVICE_API_KEY = os.getenv('FRESHSERVICE_API_KEY')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -67,6 +73,15 @@ class User(UserMixin, db.Model):
     
     def verify_password(self, password):
         return check_password_hash(self.password, password)
+    
+class History(UserMixin, db.Model):
+    __tablename__ = "history"
+    ticket_id = db.Column(db.String(100), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    image_name = db.Column(db.String(100), nullable=False)
+    image_url = db.Column(db.String(500), nullable=False)
+    prediction = db.Column(db.String(100))
+    timestamp = db.Column(db.DateTime, default=datetime.now)
 
 def predict_activity_from_cloud(image_path):
     result = client.predict(
@@ -136,31 +151,99 @@ def register():
     db.session.commit()
     return jsonify({"message": "User created successfully"}), 201
 
+@app.route('/api/history/<email>', methods=['GET'])
+def get_history(email):
+    user = User.check_user(email)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    # Query history for this user
+    user_history = History.query.filter_by(user_id=user.id).order_by(History.timestamp.desc()).all()
+    
+    return jsonify([{
+        "id": h.ticket_id,
+        "image": h.image_url,
+        "prediction": h.prediction,
+        "timestamp": h.timestamp.isoformat()
+    } for h in user_history])
+
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     if 'image' not in request.files:
         return jsonify({"error": "No image file provided"}), 400
     
     file = request.files['image']
+    user_email = request.form.get('email')
+    user = User.check_user(user_email)
+
+    if not user:
+        return jsonify({"error": "User not found"}), 401
+
     if file and allowed_file(file.filename):
+        # 1. Create a safe temporary path manually to avoid Windows File Locking
+        ext = os.path.splitext(file.filename)[1].lower()
+        temp_filename = f"upload_{int(time.time())}_{user.id}{ext}"
+        temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
+        
         try:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            # 2. Save the file to the temp path and ensure the stream is closed
+            file.save(temp_path)
             
-            # FIXED: Using file.save() is more reliable for storage
-            file.save(filepath)
+            # 3. Get AI Prediction (The file is now unlocked and readable by other libs)
+            label, score = predict_activity_from_cloud(temp_path)
+            label = label.capitalize()
             
-            # Verify file exists before sending to cloud
-            if os.path.exists(filepath):
-                label, score = predict_activity_from_cloud(filepath)
-                return jsonify({"label": label, "score": float(score)}), 200
-            else:
-                return jsonify({"error": "File system error"}), 500
+            # 4. Read the file for ImgBB encoding
+            with open(temp_path, "rb") as f:
+                base64_image = base64.b64encode(f.read())
+
+            # 5. Upload to ImgBB
+            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            payload = {
+                "key": IMGBB_API_KEY,
+                "image": base64_image,
+                "name": timestamp_str 
+            }
+            
+            imgbb_res = requests.post("https://api.imgbb.com/1/upload", data=payload).json()
+            
+            if 'data' not in imgbb_res:
+                return jsonify({"error": "ImgBB upload failed"}), 500
                 
+            full_image_url = imgbb_res['data']['url']
+
+            # 6. Save to MySQL
+            temp_ticket_id = f"TEMP_{timestamp_str}_{user.id}"
+            
+            new_history = History(
+                ticket_id=temp_ticket_id,
+                user_id=user.id,
+                image_name=f"{timestamp_str}{ext}",
+                image_url=full_image_url,
+                prediction=label
+            )
+            db.session.add(new_history)
+            db.session.commit()
+
+            return jsonify({
+                "label": label,
+                "image_url": full_image_url,
+                "ticket_id": temp_ticket_id
+            }), 200
+
         except Exception as e:
-            print(f"Upload error: {str(e)}")
-            return jsonify({"error": "Processing failed"}), 500
-    return jsonify({"error": "Invalid file"}), 400
+            print(f"Error detail: {e}") # This will show the real error in your terminal
+            return jsonify({"error": f"Processing failed: {str(e)}"}), 500
+            
+        finally:
+            # 7. ALWAYS delete the file from your local drive after processing
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception as cleanup_error:
+                    print(f"Cleanup warning: {cleanup_error}")
+
+    return jsonify({"error": "Invalid file type"}), 400
 
 # Route to see your uploaded images in browser
 @app.route('/static/uploads/<filename>')
