@@ -74,9 +74,6 @@ MYSQL_HOST=localhost
 MYSQL_DB=har_ibm
 # New Keys for Cloud Integration
 IMGBB_API_KEY=your_imgbb_api_key
-# (Future Use)
-FRESHSERVICE_DOMAIN=your_domain
-FRESHSERVICE_API_KEY=your_api_key
 ```
 
 Run the Flask app:
