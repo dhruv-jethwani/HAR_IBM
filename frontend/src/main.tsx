@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/pages/Login';
 import Register from './components/pages/Registration';
 import { Dashboard } from './components/pages/Dashboard';
+import { HistoryPage } from './components/pages/HistoryPage';
 import './index.css';
 
 // Protected Route Component
@@ -19,13 +20,21 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route 
-          path="/home" 
+        <Route
+          path="/home"
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          } 
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <HistoryPage />
+            </ProtectedRoute>
+          }
         />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

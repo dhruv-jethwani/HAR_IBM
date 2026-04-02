@@ -92,11 +92,37 @@ const Register: React.FC = () => {
                 <p style={{ fontSize: '0.875rem', color: 'rgb(190 50 70)', margin: 0 }}>{serverError}</p>
               </div>
             )}
+			<div className="flex flex-col items-center mb-12 animate-fade-up">
+			{/* The "Fancy" Header */}
+			<h1
+				style={{
+				fontFamily: "'DM Serif Display', serif",
+				fontSize: '2rem',
+				fontWeight: 400,
+				color: '#141210',
+				letterSpacing: '-0.01em',
+				}}
+			>
+				Register
+			</h1>
 
+			{/* Decorative Divider */}
+			<div className="flex items-center gap-3 mt-4">
+				<div className="h-[1px] w-8 bg-slate-200"></div>
+				<p 
+				className="uppercase tracking-[0.2em] text-[10px] text-slate-400 font-semibold"
+				style={{ fontFamily: "system-ui" }}
+				>
+				Start your journey
+				</p>
+				<div className="h-[1px] w-8 bg-slate-200"></div>
+			</div>
+			</div>
+			
             {/* Full Name */}
-            <div className="animate-fade-up delay-100" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div className="animate-fade-up delay-100" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: "-1.5rem" }}>
               <label style={labelStyle}>Full Name</label>
-              <input {...register("fullName")} type="text" placeholder="Clark Kent" className="input-light" />
+              <input {...register("fullName")} type="text" placeholder="Your Name" className="input-light" />
               {errors.fullName && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.fullName.message}</p>}
             </div>
 

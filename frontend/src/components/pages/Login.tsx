@@ -106,7 +106,7 @@ const Login: React.FC = () => {
 
             {/* Password */}
             <div className="animate-fade-up delay-200" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(100 95 88)' }}>
+              <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(100 95 88)', marginTop: "1rem" }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
@@ -114,7 +114,7 @@ const Login: React.FC = () => {
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="input-light"
+                  className="block w-full rounded-lg border border-zinc-800 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-indigo-500 transition-all"
                   style={{ paddingRight: '4.5rem' }}
                 />
                 <button
@@ -151,7 +151,7 @@ const Login: React.FC = () => {
                 disabled={isSubmitting}
                 className="btn-brand-light"
                 onClick={handleBtnClick}
-                style={{ marginTop: '0.25rem' }}
+                style={{ marginTop: '3rem' }}
               >
                 {isSubmitting ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
