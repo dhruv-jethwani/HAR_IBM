@@ -63,14 +63,6 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 db = SQLAlchemy()
 db.init_app(app)
 
-with app.app_context():
-    try:
-        print("Checking/Creating database tables...")
-        db.create_all()
-        print("Database tables are ready!")
-    except Exception as e:
-        print(f"Database sync failed: {e}")
-
 # 4. AI Model Client
 client = Client("darkangel106/har-api")
 
@@ -96,6 +88,15 @@ class History(UserMixin, db.Model):
     image_url = db.Column(db.String(500), nullable=False)
     prediction = db.Column(db.String(100))
     timestamp = db.Column(db.DateTime, default=datetime.now)
+    
+with app.app_context():
+    try:
+        print("Checking/Creating database tables...")
+        db.create_all()
+        print("Database tables are ready!")
+    except Exception as e:
+        print(f"Database sync failed: {e}")
+
 
 def predict_activity_from_cloud(image_path):
     result = client.predict(
