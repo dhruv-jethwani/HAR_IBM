@@ -43,16 +43,21 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # 3. Database Configuration
-MYSQL_USER = os.getenv('MYSQL_USER', 'root')
-MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password')
-MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
-MYSQL_DB = os.getenv('MYSQL_DB', 'har_ibm')
+MYSQL_USER = os.getenv('MYSQL_USER')
+MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
+MYSQL_HOST = os.getenv('MYSQL_HOST')
+MYSQL_PORT = os.getenv('MYSQL_PORT', '4000')
+MYSQL_DB = os.getenv('MYSQL_DB', 'test')
 IMGBB_API_KEY = os.getenv('IMGBB_API_KEY')
-FRESHSERVICE_DOMAIN = os.getenv('FRESHSERVICE_DOMAIN')
-FRESHSERVICE_API_KEY = os.getenv('FRESHSERVICE_API_KEY')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "connect_args": {
+        "ssl": {
+            "ca": "/etc/ssl/certs/ca-certificates.crt" 
+        }
+    }
+}
 
 db = SQLAlchemy()
 db.init_app(app)

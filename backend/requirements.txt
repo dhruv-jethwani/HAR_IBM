@@ -9,3 +9,4 @@ pyjwt
 pillow
 gradio_client
 werkzeug
+gunicorn
