@@ -9,7 +9,6 @@ declare global {
 export const Dashboard = () => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
-
   const userEmail = localStorage.getItem('user_email');
 
   useEffect(() => {
@@ -18,7 +17,8 @@ export const Dashboard = () => {
 
     const loadChatbot = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/chatbot-token', {
+        const API_BASE = import.meta.env.VITE_API_URL || 'https://har-backend-10x1.onrender.com';
+        const response = await fetch(`${API_BASE}/api/chatbot-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: userEmail })
@@ -77,7 +77,7 @@ export const Dashboard = () => {
       fontFamily: "'DM Sans', sans-serif"
     }}>
 
-      {/* Sidebar */}
+      {/* Sidebar - Restored Original Design */}
       <aside style={{
         width: '240px',
         display: 'flex',
@@ -88,14 +88,11 @@ export const Dashboard = () => {
         height: '100vh',
         flexShrink: 0
       }}>
-
-        {/* Logo */}
         <div style={{ flexShrink: 0, marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '32px', height: '32px', background: '#635BFF', borderRadius: '8px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>H</div>
           <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>HAR-Cloud</span>
         </div>
 
-        {/* Nav */}
         <div style={{ flexShrink: 0, flex: 1 }}>
           <p style={{ padding: '0 0.75rem', marginBottom: '0.5rem', fontSize: '0.625rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgb(180 175 168)' }}>
             Platform
@@ -136,7 +133,6 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        {/* Sign Out */}
         <div style={{ flexShrink: 0, paddingTop: '1rem', borderTop: '1px solid rgb(220 216 210)' }}>
           <button
             onClick={() => { localStorage.clear(); navigate('/login'); }}
@@ -166,9 +162,7 @@ export const Dashboard = () => {
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
             Logout
           </button>
@@ -194,11 +188,11 @@ export const Dashboard = () => {
             Deploy high-fidelity vision to detect activity sequences.
           </p>
 
+          {/* Restored Card Styling */}
           <div style={{ background: 'white', padding: '2rem', borderRadius: '2rem', border: '1px solid #eee', boxShadow: '0 20px 50px rgba(0,0,0,0.05)' }}>
             <UploadSection onUploadSuccess={() => {}} />
           </div>
 
-          {/* Quick link to history */}
           <button
             onClick={() => navigate('/history')}
             style={{

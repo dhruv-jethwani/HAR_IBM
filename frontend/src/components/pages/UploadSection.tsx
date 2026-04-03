@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect} from 'react';
 
-// 1. Added onUploadSuccess prop to trigger sidebar refresh
 interface UploadSectionProps {
   onUploadSuccess?: () => void;
 }
@@ -11,9 +10,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess })
   const [loading, setLoading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  // 2. Get the logged-in user's email from localStorage
   const userEmail = localStorage.getItem('user_email');
 
   useEffect(() => {
@@ -21,49 +18,32 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess })
   }, [previewUrl]);
 
   const processUpload = async (file: File) => {
-    // Basic Validations
-    if (!file.type.startsWith('image/')) {
-      setError("Please upload a valid image file");
-      return;
-    }
-    if (file.size > 16 * 1024 * 1024) {
-      setError("File size must be less than 16MB");
-      return;
-    }
-    if (!userEmail) {
-      setError("User session not found. Please log in again.");
-      return;
-    }
+    if (!file.type.startsWith('image/')) { setError("Please upload a valid image file"); return; }
+    if (file.size > 16 * 1024 * 1024) { setError("File size must be less than 16MB"); return; }
+    if (!userEmail) { setError("User session not found. Please log in again."); return; }
 
     setResult("");
     setError("");
     setPreviewUrl(URL.createObjectURL(file));
     setLoading(true);
 
-    // 3. Prepare FormData with BOTH image and email
     const formData = new FormData();
     formData.append('image', file);
-    formData.append('email', userEmail); // Backend uses this to link to User table
+    formData.append('email', userEmail);
 
     try {
-      const res = await fetch('http://localhost:5000/upload_image', { 
-        method: 'POST', 
-        body: formData 
-      });
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://har-backend-10x1.onrender.com';
+      const res = await fetch(`${API_BASE}/upload_image`, { method: 'POST', body: formData });
       const data = await res.json();
       
       if (res.ok) {
         setResult(data.label || "No Label Detected");
-        
-        // 4. TRIGGER REFRESH: This tells Dashboard to re-fetch the history
-        if (onUploadSuccess) {
-          onUploadSuccess();
-        }
+        if (onUploadSuccess) onUploadSuccess();
       } else {
         setError(data.error || "Upload failed. Please try again.");
       }
     } catch (err) { 
-      setError("Network error. Is the Flask server running on port 5000?");
+      setError("Network error. Is the backend server running?");
       console.error(err);
     } finally { 
       setLoading(false); 
@@ -77,14 +57,8 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess })
     if (file) processUpload(file);
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processUpload(file);
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Drop Zone */}
       <div
         className={`drop-zone ${dragOver ? 'drag-over' : ''}`}
         style={{
@@ -101,11 +75,11 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess })
       >
         <div style={{ aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           {previewUrl ? (
-            <div className="relative w-full h-full" style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
               <img src={previewUrl} alt="Target" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '1rem' }} />
               <button 
                 onClick={() => {setPreviewUrl(null); setResult(""); setError("");}} 
-                style={{ position: 'absolute', top: '10px', right: '10px', background: 'white', border: '1px solid #ccc', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer' }}
+                style={{ position: 'absolute', top: '10px', right: '10px', background: 'white', border: '1px solid #ccc', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >✕</button>
             </div>
           ) : (
@@ -115,11 +89,11 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess })
               </div>
               <p style={{ fontWeight: 600, margin: '0 0 4px' }}>Click or drop image</p>
               <p style={{ fontSize: '0.8rem', color: '#888' }}>PNG, JPG up to 16MB</p>
-              <input ref={inputRef} type="file" onChange={handleFile} style={{ display: 'none' }} accept="image/*" />
+              <input type="file" onChange={(e) => e.target.files?.[0] && processUpload(e.target.files[0])} style={{ display: 'none' }} accept="image/*" />
             </label>
           )}
 
-          {/* Neural Scan Loading Overlay */}
+          {/* Restored Neural Scan Loading Overlay */}
           {loading && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
               <div className="spinner" />

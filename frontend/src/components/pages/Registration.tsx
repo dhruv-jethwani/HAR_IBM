@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 
+// 1. Validation Schema
 const registerSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Please enter a valid work email"),
@@ -26,6 +27,7 @@ const Register: React.FC = () => {
     resolver: zodResolver(registerSchema),
   });
 
+  // Ripple Effect Logic
   const handleBtnClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = btnRef.current;
     if (!btn) return;
@@ -42,24 +44,33 @@ const Register: React.FC = () => {
     setTimeout(() => ripple.remove(), 700);
   };
 
+  // 2. Optimized Submit Handler
   const onSubmit = async (data: RegisterFormValues) => {
     setServerError('');
     try {
-      const response = await fetch('/api/register', {
+      // Pull API URL from Env or fallback to your Render URL
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://har-backend-10x1.onrender.com';
+      
+      const response = await fetch(`${API_BASE}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          fullName: data.fullName,
+          email: data.email,
+          password: data.password
+        })
       });
+      
       const result = await response.json();
       
       if (response.ok) {
         navigate('/login');
       } else {
-        setServerError(result.error || 'Registration failed. Please try again.');
+        setServerError(result.error || 'Registration failed.');
       }
     } catch (error) {
-      setServerError('An error occurred. Please try again later.');
-      console.error(error);
+      setServerError('Could not connect to the server. Please try again later.');
+      console.error("Fetch Error:", error);
     }
   };
 
@@ -87,54 +98,36 @@ const Register: React.FC = () => {
         <div className="card-light animate-scale-in" style={{ padding: '2.75rem 2.5rem' }}>
 
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+            <div className="flex flex-col items-center mb-6 animate-fade-up">
+              <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '2rem', color: '#141210' }}>
+                Register
+              </h1>
+              <div className="flex items-center gap-3 mt-4">
+                <div className="h-[1px] w-8 bg-slate-200"></div>
+                <p className="uppercase tracking-[0.2em] text-[10px] text-slate-400 font-semibold">Start your journey</p>
+                <div className="h-[1px] w-8 bg-slate-200"></div>
+              </div>
+            </div>
+
             {serverError && (
-              <div className="error-box">
-                <p style={{ fontSize: '0.875rem', color: 'rgb(190 50 70)', margin: 0 }}>{serverError}</p>
+              <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
+                <p style={{ fontSize: '0.875rem', color: 'rgb(190 50 70)', textAlign: 'center' }}>{serverError}</p>
               </div>
             )}
-			<div className="flex flex-col items-center mb-12 animate-fade-up">
-			{/* The "Fancy" Header */}
-			<h1
-				style={{
-				fontFamily: "'DM Serif Display', serif",
-				fontSize: '2rem',
-				fontWeight: 400,
-				color: '#141210',
-				letterSpacing: '-0.01em',
-				}}
-			>
-				Register
-			</h1>
-
-			{/* Decorative Divider */}
-			<div className="flex items-center gap-3 mt-4">
-				<div className="h-[1px] w-8 bg-slate-200"></div>
-				<p 
-				className="uppercase tracking-[0.2em] text-[10px] text-slate-400 font-semibold"
-				style={{ fontFamily: "system-ui" }}
-				>
-				Start your journey
-				</p>
-				<div className="h-[1px] w-8 bg-slate-200"></div>
-			</div>
-			</div>
-			
-            {/* Full Name */}
-            <div className="animate-fade-up delay-100" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: "-1.5rem" }}>
+            
+            <div className="animate-fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={labelStyle}>Full Name</label>
               <input {...register("fullName")} type="text" placeholder="Your Name" className="input-light" />
-              {errors.fullName && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.fullName.message}</p>}
+              {errors.fullName && <p className="text-xs text-red-600">{errors.fullName.message}</p>}
             </div>
 
-            {/* Email */}
-            <div className="animate-fade-up delay-150" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div className="animate-fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={labelStyle}>Work Email</label>
               <input {...register("email")} type="email" placeholder="name@company.com" className="input-light" />
-              {errors.email && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
             </div>
 
-            {/* Password grid */}
-            <div className="animate-fade-up delay-200">
+            <div className="animate-fade-up">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <label style={labelStyle}>Password</label>
@@ -145,79 +138,40 @@ const Register: React.FC = () => {
                   <input {...register("confirmPassword")} type={showPassword ? "text" : "password"} placeholder="••••••••" className="input-light" />
                 </div>
               </div>
-
-              {(errors.password || errors.confirmPassword) && (
-                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  {errors.password && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.password.message}</p>}
-                  {errors.confirmPassword && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.confirmPassword.message}</p>}
-                </div>
-              )}
+              {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password.message}</p>}
+              {errors.confirmPassword && <p className="text-xs text-red-600 mt-1">{errors.confirmPassword.message}</p>}
 
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  marginTop: '0.5rem',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  color: 'rgb(99 91 255)',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.375rem',
-                  transition: 'opacity 0.15s',
-                }}
+                className="mt-2 text-indigo-600 text-xs font-semibold flex items-center gap-1 hover:opacity-75 transition-opacity"
               >
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  {showPassword
-                    ? <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
-                    : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
-                  }
-                </svg>
                 {showPassword ? "Hide passwords" : "Show passwords"}
               </button>
             </div>
 
-            {/* Submit */}
-            <div className="animate-fade-up delay-300" style={{ marginTop: '0.25rem' }}>
+            <div className="pt-2">
               <button
                 ref={btnRef}
                 type="submit"
                 disabled={isSubmitting}
-                className="btn-brand-light"
+                className="btn-brand-light w-full"
                 onClick={handleBtnClick}
               >
-                {isSubmitting ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                    <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
-                    <span>Creating account…</span>
-                  </div>
-                ) : "Create free account"}
+                {isSubmitting ? "Creating account…" : "Create free account"}
               </button>
             </div>
           </form>
 
-          <div className="divider animate-fade-up delay-400" style={{ margin: '1.75rem 0' }} />
+          <div className="h-[1px] w-full bg-slate-100 my-8" />
 
-          <p className="animate-fade-up delay-500" style={{ textAlign: 'center', fontSize: '0.875rem', color: 'rgb(130 125 118)', margin: 0 }}>
+          <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'rgb(130 125 118)' }}>
             Already have an account?{' '}
-            <Link
-              to="/login"
-              style={{ fontWeight: 600, color: 'rgb(99 91 255)', textDecoration: 'none', transition: 'opacity 0.15s ease' }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
+            <Link to="/login" className="font-semibold text-indigo-600 hover:opacity-75">
               Log in here
             </Link>
           </p>
         </div>
-
-        <p className="animate-fade-in delay-500" style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(190 185 178)' }}>
-          © 2026 HAR UI · Secure Registration
-        </p>
       </div>
     </div>
   );

@@ -21,7 +21,6 @@ const Login: React.FC = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  // Ripple effect on button click
   const handleBtnClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = btnRef.current;
     if (!btn) return;
@@ -39,9 +38,11 @@ const Login: React.FC = () => {
   };
 
   const onSubmit = async (data: LoginFormValues) => {
-    setServerError(''); // Clear previous errors
+    setServerError('');
     try {
-      const response = await fetch('/api/login', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://har-backend-10x1.onrender.com';
+      
+      const response = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -57,7 +58,6 @@ const Login: React.FC = () => {
       }
     } catch (error) { 
       setServerError('An error occurred. Please try again later.');
-      console.error(error); 
     }
   };
 
@@ -66,7 +66,6 @@ const Login: React.FC = () => {
       className="relative flex min-h-screen items-center justify-center px-4"
       style={{ background: 'rgb(250 249 247)', fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="orb orb-violet" style={{ width: '600px', height: '600px', top: '-150px', left: '-100px' }} />
         <div className="orb orb-amber" style={{ width: '500px', height: '500px', bottom: '-100px', right: '-80px' }} />
@@ -74,117 +73,49 @@ const Login: React.FC = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-[420px]">
-        {/* Card */}
         <div className="card-light animate-scale-in" style={{ padding: '2.75rem 2.5rem' }}>
-
-          {/* Branding */}
           <div className="flex flex-col items-center mb-9 animate-fade-up">
             <div className="logo-mark mb-5">HAR</div>
-            <h1
-              style={{
-                fontFamily: "'DM Serif Display', serif",
-                fontSize: '1.875rem',
-                fontWeight: 400,
-                color: 'rgb(20 18 16)',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.2,
-              }}
-            >
+            <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.875rem', fontWeight: 400, color: 'rgb(20 18 16)', letterSpacing: '-0.02em' }}>
               Welcome back
             </h1>
-            <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'rgb(100 95 88)' }}>
-              Sign in to continue to HAR-Cloud
-            </p>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'rgb(100 95 88)' }}> Sign in to continue to HAR-Cloud </p>
           </div>
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
             {serverError && <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-3">{serverError}</div>}
             <div className="space-y-2">
               <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(100 95 88)' }}>Email</label>
-              <input {...register("email")} type="email" placeholder="name@gmail.com" className="block w-full rounded-lg border border-zinc-800 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-indigo-500 transition-all" />
+              <input {...register("email")} type="email" placeholder="name@gmail.com" className="block w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-indigo-500 transition-all" />
               {errors.email && <p className="text-[13px] text-red-400/90">{errors.email.message}</p>}
             </div>
 
-            {/* Password */}
             <div className="animate-fade-up delay-200" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(100 95 88)', marginTop: "1rem" }}>
-                Password
-              </label>
+              <label style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(100 95 88)', marginTop: "1rem" }}> Password </label>
               <div style={{ position: 'relative' }}>
-                <input
-                  {...register("password")}
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  className="block w-full rounded-lg border border-zinc-800 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-indigo-500 transition-all"
-                  style={{ paddingRight: '4.5rem' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '1rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: 'rgb(99 91 255)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    letterSpacing: '0.02em',
-                    padding: '0.25rem 0',
-                  }}
-                >
+                <input {...register("password")} type={showPassword ? "text" : "password"} placeholder="Enter your password"
+                  className="block w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-indigo-500 transition-all"
+                  style={{ paddingRight: '4.5rem' }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', fontWeight: 600, color: 'rgb(99 91 255)', background: 'none', border: 'none', cursor: 'pointer' }}>
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
-              {errors.password && (
-                <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.password.message}</p>
-              )}
+              {errors.password && <p style={{ fontSize: '0.8125rem', color: 'rgb(190 50 70)', margin: 0 }}>{errors.password.message}</p>}
             </div>
 
-            {/* Submit */}
             <div className="animate-fade-up delay-300">
-              <button
-                ref={btnRef}
-                type="submit"
-                disabled={isSubmitting}
-                className="btn-brand-light"
-                onClick={handleBtnClick}
-                style={{ marginTop: '3rem' }}
-              >
-                {isSubmitting ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                    <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
-                    <span>Signing in…</span>
-                  </div>
-                ) : "Sign in"}
+              <button ref={btnRef} type="submit" disabled={isSubmitting} className="btn-brand-light" onClick={handleBtnClick} style={{ marginTop: '3rem' }}>
+                {isSubmitting ? "Signing in…" : "Sign in"}
               </button>
             </div>
           </form>
 
-          {/* Divider */}
           <div className="divider animate-fade-up delay-400" style={{ margin: '1.75rem 0' }} />
 
           <p className="animate-fade-up delay-500" style={{ textAlign: 'center', fontSize: '0.875rem', color: 'rgb(130 125 118)', margin: 0 }}>
             Don't have an account?{' '}
-            <Link
-              to="/register"
-              style={{
-                fontWeight: 600,
-                color: 'rgb(99 91 255)',
-                textDecoration: 'none',
-                transition: 'opacity 0.15s ease',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              Create one
-            </Link>
+            <Link to="/register" style={{ fontWeight: 600, color: 'rgb(99 91 255)', textDecoration: 'none' }}> Create one </Link>
           </p>
         </div>
-
-        {/* Footer */}
         <p className="animate-fade-in delay-500" style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(190 185 178)' }}>
           © 2026 HAR-Cloud · Secure Login
         </p>
