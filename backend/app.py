@@ -54,7 +54,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PA
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "connect_args": {
         "ssl": {
-            "ca": "/etc/ssl/certs/ca-certificates.crt" 
+            "ca": "/etc/ssl/certs/ca-certificates.crt",
+            "check_hostname": False  # Add this line
         }
     }
 }
