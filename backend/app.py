@@ -62,6 +62,14 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 db = SQLAlchemy()
 db.init_app(app)
 
+with app.app_context():
+    try:
+        print("Checking/Creating database tables...")
+        db.create_all()
+        print("Database tables are ready!")
+    except Exception as e:
+        print(f"Database sync failed: {e}")
+
 # 4. AI Model Client
 client = Client("darkangel106/har-api")
 
@@ -260,6 +268,4 @@ def health_check():
     return "OK", 200
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5000)
