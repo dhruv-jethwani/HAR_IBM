@@ -67,13 +67,15 @@ pip install -r requirements.txt
 Create a `.env` file in the project root (one level above `backend/`) with these keys as a minimum:
 
 ```env
-SECRET_KEY=your_secret_key_here
-MYSQL_USER=your_db_user
-MYSQL_PASSWORD=your_db_password
-MYSQL_HOST=localhost
-MYSQL_DB=har_ibm
-# New Keys for Cloud Integration
-IMGBB_API_KEY=your_imgbb_api_key
+MYSQL_USER={connection-string}.root
+MYSQL_PASSWORD=password
+MYSQL_HOST=gateway01.us-west-2.prod.aws.tidbcloud.com
+MYSQL_PORT=4000
+MYSQL_DB=test
+SECRET_KEY="very_very_secret_key"
+IMGBB_API_KEY=imgbb_api_key
+CHATBOT_IDENTITY_SECRET="super-secret-123"
+VITE_API_URL=render_api_url
 ```
 
 Run the Flask app:
