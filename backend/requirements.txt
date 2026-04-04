@@ -6,6 +6,7 @@ pymysql
 requests
 python-dotenv
 pyjwt
+pytz
 pillow
 gradio_client
 werkzeug

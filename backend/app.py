@@ -5,6 +5,7 @@ import tempfile
 import jwt
 import os
 import time
+import pytz
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -66,6 +67,8 @@ db.init_app(app)
 # 4. AI Model Client
 client = Client("darkangel106/har-api")
 
+IST = pytz.timezone('Asia/Kolkata')
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
@@ -87,7 +90,7 @@ class History(UserMixin, db.Model):
     image_name = db.Column(db.String(100), nullable=False)
     image_url = db.Column(db.String(500), nullable=False)
     prediction = db.Column(db.String(100))
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(IST))
     
 with app.app_context():
     try:
