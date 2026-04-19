@@ -11,8 +11,6 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
-from PIL import Image
 from dotenv import load_dotenv
 from pathlib import Path
 from gradio_client import Client, handle_file
@@ -50,6 +48,10 @@ MYSQL_HOST = os.getenv('MYSQL_HOST')
 MYSQL_PORT = os.getenv('MYSQL_PORT', '4000')
 MYSQL_DB = os.getenv('MYSQL_DB', 'test')
 IMGBB_API_KEY = os.getenv('IMGBB_API_KEY')
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+hashed_admin = generate_password_hash(ADMIN_PASSWORD)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -82,6 +84,10 @@ class User(UserMixin, db.Model):
     
     def verify_password(self, password):
         return check_password_hash(self.password, password)
+
+    @staticmethod
+    def check_admin():
+        return User.query.filter_by(email=ADMIN_EMAIL).first()
     
 class History(UserMixin, db.Model):
     __tablename__ = "history"
@@ -92,14 +98,29 @@ class History(UserMixin, db.Model):
     prediction = db.Column(db.String(100))
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(IST))
     
+class ProblemReport(db.Model):
+    __tablename__ = "problem_reports"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    image_url = db.Column(db.String(500), nullable=True) # Nullable in case a user reports a text-only problem
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(IST))
+    
 with app.app_context():
     try:
         print("Checking/Creating database tables...")
         db.create_all()
+        if User.check_admin():
+            print("Admin user already exists.")
+        else:
+            admin_user = User(name=ADMIN_USERNAME, email=ADMIN_EMAIL, password=hashed_admin)
+            db.session.add(admin_user)
+            db.session.commit()
+            print("Admin User created successfully.")
+            
         print("Database tables are ready!")
     except Exception as e:
         print(f"Database sync failed: {e}")
-
 
 def predict_activity_from_cloud(image_path):
     result = client.predict(
@@ -262,6 +283,106 @@ def upload_image():
                     print(f"Cleanup warning: {cleanup_error}")
 
     return jsonify({"error": "Invalid file type"}), 400
+
+@app.route('/api/report-problem', methods=['POST'])
+def report_problem():
+    # Because of the file upload, we use form data instead of JSON
+    email = request.form.get('email')
+    description = request.form.get('description')
+    
+    if not email or not description:
+        return jsonify({"error": "Email and description are required"}), 400
+
+    user = User.check_user(email)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    image_url = None
+    
+    # Handle image upload to ImgBB if an image was provided
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and allowed_file(file.filename):
+            ext = os.path.splitext(file.filename)[1].lower()
+            temp_filename = f"report_{int(time.time())}_{user.id}{ext}"
+            temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
+            
+            try:
+                file.save(temp_path)
+                
+                with open(temp_path, "rb") as f:
+                    base64_image = base64.b64encode(f.read())
+
+                # Upload to ImgBB
+                timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                payload = {
+                    "key": IMGBB_API_KEY,
+                    "image": base64_image,
+                    "name": f"bug_report_{timestamp_str}"
+                }
+                
+                imgbb_res = requests.post("https://api.imgbb.com/1/upload", data=payload).json()
+                
+                if 'data' in imgbb_res:
+                    image_url = imgbb_res['data']['url']
+                    
+            except Exception as e:
+                print(f"ImgBB Upload error: {e}")
+                return jsonify({"error": "Failed to upload image."}), 500
+            finally:
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception as cleanup_error:
+                        print(f"Cleanup warning: {cleanup_error}")
+
+    # Save the ticket to the database
+    new_report = ProblemReport(
+        user_id=user.id, 
+        description=description, 
+        image_url=image_url
+    )
+    db.session.add(new_report)
+    db.session.commit()
+
+    return jsonify({"message": "Problem reported successfully!"}), 201
+
+@app.route('/api/admin-dashboard', methods=['POST'])
+def admin_dashboard():
+    data = request.get_json()
+    
+    if not data or 'email' not in data:
+        return jsonify({"error": "Email is required"}), 400
+        
+    user_email = data.get('email')
+    
+    # Verify Admin Status
+    if user_email != ADMIN_EMAIL:
+        return jsonify({"error": "Unauthorized. Admin access restricted."}), 403
+
+    # Fetch all problem reports, newest first
+    reports = ProblemReport.query.order_by(ProblemReport.timestamp.desc()).all()
+    
+    # Format the data to send to the frontend
+    tickets = []
+    for report in reports:
+        # Get the user who submitted this report to include their email/name
+        reporting_user = db.session.get(User, report.user_id) 
+        
+        tickets.append({
+            "ticket_id": report.id,
+            "user_email": reporting_user.email if reporting_user else "Unknown",
+            "user_name": reporting_user.name if reporting_user else "Unknown",
+            "description": report.description,
+            "image_url": report.image_url, # Will be null if no image was uploaded
+            "timestamp": report.timestamp.isoformat(),
+            "status": "Open" # You can add a status column later if you want to mark things resolved
+        })
+    
+    return jsonify({
+        "message": "Welcome Admin",
+        "tickets": tickets
+    }), 200
 
 # Route to see your uploaded images in browser
 @app.route('/static/uploads/<filename>')
