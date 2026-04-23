@@ -172,9 +172,14 @@ def login():
     
     user = User.check_user(data.get('email'))
     if user and user.verify_password(data.get('password')):
+        # Determine role
+        role = 'admin' if user.email == ADMIN_EMAIL else 'user'
+        
         return jsonify({
             "message": "Login successful",
-            "email": user.email # Added for React localStorage
+            "email": user.email,
+            "name": user.name,  # Pass the username here
+            "role": role
         }), 200
     return jsonify({"error": "Invalid credentials"}), 401
 
@@ -373,19 +378,28 @@ def update_report():
     data = request.get_json()
     admin_email = data.get('admin_email')
     
+    # Simple admin check
     if admin_email != ADMIN_EMAIL:
-        return jsonify({"error": "Unauthorized"}), 403
+        return jsonify({"error": "Unauthorized. Admin access restricted."}), 403
 
-    report = db.session.get(ProblemReport, data.get('ticket_id'))
+    ticket_id = data.get('ticket_id')
+    new_status = data.get('status')
+    new_reply = data.get('admin_reply')
+
+    # Fetch report
+    report = db.session.get(ProblemReport, ticket_id)
     if not report:
         return jsonify({"error": "Report not found"}), 404
 
-    # Update fields (Ensure these columns exist in your ProblemReport model!)
-    report.status = data.get('status')
-    report.admin_reply = data.get('admin_reply')
-    
-    db.session.commit()
-    return jsonify({"message": "Report updated successfully"})
+    try:
+        report.status = new_status
+        report.admin_reply = new_reply
+        db.session.commit()
+        return jsonify({"message": "Ticket updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Update error: {e}")
+        return jsonify({"error": "Database update failed"}), 500
 
 @app.route('/api/admin-dashboard', methods=['POST'])
 def admin_dashboard():
@@ -416,7 +430,8 @@ def admin_dashboard():
             "description": report.description,
             "image_url": report.image_url, # Will be null if no image was uploaded
             "timestamp": report.timestamp.isoformat(),
-            "status": "Open" # You can add a status column later if you want to mark things resolved
+            "status": report.status,        # Make sure this is included!
+    		"admin_reply": report.admin_reply # Make sure this is included!
         })
     
     return jsonify({

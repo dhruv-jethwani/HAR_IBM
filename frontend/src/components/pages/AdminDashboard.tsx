@@ -108,7 +108,7 @@ export const AdminDashboard = () => {
             <p style={{ color: '#8C8780', marginTop: '0.5rem' }}>Oversee and respond to user-submitted issues.</p>
           </div>
           <div style={{ background: 'white', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid rgb(220 216 210)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgb(80 75 70)' }}>{userEmail}</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgb(80 75 70)' }}>Admin</span>
             <div style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%' }}></div>
           </div>
         </header>
