@@ -52,8 +52,18 @@ const Login: React.FC = () => {
       if (response.ok) {
         localStorage.setItem('auth_token', 'session_active');
         localStorage.setItem('user_email', result.email);
-        localStorage.setItem('user_role', result.role || 'user');
-        navigate('/home');
+		localStorage.setItem('user_name', result.name);
+        
+        // Use result.role from backend, or check against admin email as fallback
+        const role = result.email === 'admin@gmail.com' ? 'admin' : (result.role || 'user');
+        localStorage.setItem('user_role', role);
+
+        // ROLE-BASED REDIRECT
+        if (role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/home');
+        }
       } else {
         setServerError(result.error || 'Login failed. Please try again.');
       }

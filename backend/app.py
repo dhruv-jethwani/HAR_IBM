@@ -104,6 +104,8 @@ class ProblemReport(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     description = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(500), nullable=True) # Nullable in case a user reports a text-only problem
+    status = db.Column(db.String(50), default="Pending")
+    admin_reply = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(IST))
     
 with app.app_context():
@@ -170,9 +172,14 @@ def login():
     
     user = User.check_user(data.get('email'))
     if user and user.verify_password(data.get('password')):
+        # Determine role
+        role = 'admin' if user.email == ADMIN_EMAIL else 'user'
+        
         return jsonify({
             "message": "Login successful",
-            "email": user.email # Added for React localStorage
+            "email": user.email,
+            "name": user.name,  # Pass the username here
+            "role": role
         }), 200
     return jsonify({"error": "Invalid credentials"}), 401
 
@@ -347,6 +354,53 @@ def report_problem():
 
     return jsonify({"message": "Problem reported successfully!"}), 201
 
+# 1. Get reports for a specific user (for SupportPage.tsx)
+@app.route('/api/user-reports/<email>', methods=['GET'])
+def get_user_reports(email):
+    user = User.check_user(email)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    reports = ProblemReport.query.filter_by(user_id=user.id).order_by(ProblemReport.timestamp.desc()).all()
+    
+    return jsonify([{
+        "ticket_id": r.id,
+        "description": r.description,
+        "image_url": r.image_url,
+        "status": getattr(r, 'status', 'Open'), # Default to Open if column doesn't exist yet
+        "admin_reply": getattr(r, 'admin_reply', None),
+        "timestamp": r.timestamp.isoformat()
+    } for r in reports])
+
+# 2. Update a report (for AdminDashboard.tsx)
+@app.route('/api/admin/update-report', methods=['POST'])
+def update_report():
+    data = request.get_json()
+    admin_email = data.get('admin_email')
+    
+    # Simple admin check
+    if admin_email != ADMIN_EMAIL:
+        return jsonify({"error": "Unauthorized. Admin access restricted."}), 403
+
+    ticket_id = data.get('ticket_id')
+    new_status = data.get('status')
+    new_reply = data.get('admin_reply')
+
+    # Fetch report
+    report = db.session.get(ProblemReport, ticket_id)
+    if not report:
+        return jsonify({"error": "Report not found"}), 404
+
+    try:
+        report.status = new_status
+        report.admin_reply = new_reply
+        db.session.commit()
+        return jsonify({"message": "Ticket updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Update error: {e}")
+        return jsonify({"error": "Database update failed"}), 500
+
 @app.route('/api/admin-dashboard', methods=['POST'])
 def admin_dashboard():
     data = request.get_json()
@@ -376,7 +430,8 @@ def admin_dashboard():
             "description": report.description,
             "image_url": report.image_url, # Will be null if no image was uploaded
             "timestamp": report.timestamp.isoformat(),
-            "status": "Open" # You can add a status column later if you want to mark things resolved
+            "status": report.status,        # Make sure this is included!
+    		"admin_reply": report.admin_reply # Make sure this is included!
         })
     
     return jsonify({
