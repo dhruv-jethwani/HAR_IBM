@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sidebar } from '../Sidebar';
 
 interface HistoryItem {
   ticket_id: string;
@@ -20,8 +21,6 @@ export const HistoryPage = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
-  const [mounted, setMounted] = useState(false);
-
   const userEmail = localStorage.getItem('user_email');
 
   const fetchHistory = useCallback(async () => {
@@ -49,7 +48,6 @@ export const HistoryPage = () => {
   }, [userEmail, navigate]);
 
   useEffect(() => {
-    setMounted(true);
     fetchHistory();
   }, [fetchHistory]);
 
@@ -74,170 +72,78 @@ export const HistoryPage = () => {
       return a.prediction.localeCompare(b.prediction);
     });
 
-  const styles = {
-    page: {
-      minHeight: '100vh',
-      background: 'rgb(250 249 247)',
-      fontFamily: "'DM Sans', sans-serif",
-    } as React.CSSProperties,
-
-    topbar: {
-      position: 'sticky' as const,
-      top: 0,
-      zIndex: 10,
-      background: 'rgba(255,255,255,0.85)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid rgb(220 216 210)',
-      padding: '0 2.5rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      height: '64px',
-    },
-
-    backBtn: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      padding: '0.5rem 1rem',
-      background: 'white',
-      border: '1px solid rgb(220 216 210)',
-      borderRadius: '10px',
-      cursor: 'pointer',
-      fontWeight: 600,
-      fontSize: '0.85rem',
-      color: 'rgb(60 55 50)',
-      fontFamily: "'DM Sans', sans-serif",
-    },
-
-    content: {
-      maxWidth: '1100px',
-      margin: '0 auto',
-      padding: '2.5rem 2.5rem',
-      opacity: mounted ? 1 : 0,
-      transform: mounted ? 'translateY(0)' : 'translateY(12px)',
-      transition: 'all 0.4s ease',
-    },
-
-    h1: {
-      fontSize: '2.5rem',
-      fontFamily: "'DM Serif Display', serif",
-      color: 'rgb(20 18 16)',
-      margin: 0,
-    },
-
-    countBadge: {
-      fontSize: '0.75rem',
-      fontWeight: 800,
-      color: 'rgb(99 91 255)',
-      letterSpacing: '0.1em',
-      background: 'rgba(99,91,255,0.08)',
-      padding: '0.3rem 0.75rem',
-      borderRadius: '100px',
-    },
-
-    searchInput: {
-      width: '100%',
-      padding: '0.65rem 1rem 0.65rem 2.5rem',
-      border: '1px solid rgb(220 216 210)',
-      borderRadius: '12px',
-      background: 'white',
-      fontSize: '0.875rem',
-      outline: 'none',
-    },
-
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-      gap: '1.5rem',
-    },
-
-    card: (selected: boolean) => ({
-      background: 'white',
-      border: selected ? '2px solid rgb(99 91 255)' : '1px solid rgb(220 216 210)',
-      borderRadius: '20px',
-      overflow: 'hidden',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      boxShadow: selected ? '0 0 0 4px rgba(99,91,255,0.1)' : '0 2px 8px rgba(0,0,0,0.04)',
-    }),
-
-    cardImg: {
-      width: '100%',
-      height: '180px',
-      objectFit: 'cover' as const,
-      background: 'rgb(240 238 235)',
-    }
-  };
-
   return (
-    <div style={styles.page}>
-      {/* Topbar */}
-      <div style={styles.topbar}>
-        <button style={styles.backBtn} onClick={() => navigate('/home')}>
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      width: '100vw',
+      background: 'rgb(250 249 247)',
+      fontFamily: "'DM Sans', sans-serif"
+    }}>
+      <Sidebar activePage="History" />
 
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-
-          </svg>
-
-          Dashboard
-
-        </button>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '28px', height: '28px', background: '#635BFF', borderRadius: '7px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>H</div>
-          <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>HAR-Cloud</span>
-        </div>
-      </div>
-
-      <div style={styles.content}>
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <h1 style={styles.h1}>Analysis <span style={{ color: '#635BFF' }}>History</span></h1>
-            <span style={styles.countBadge}>{filtered.length} RECORDS</span>
+      {/* Main Content */}
+      <main style={{ flex: 1, overflowY: 'auto', padding: '2.5rem 4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
+          <div>
+            <h1 style={{ fontSize: '2.5rem', fontFamily: "'DM Serif Display', serif", color: 'rgb(20 18 16)', margin: 0 }}>
+              Analysis <span style={{ color: '#635BFF' }}>History</span>
+            </h1>
+            <p style={{ color: '#8C8780', marginTop: '0.5rem' }}>Review your past activity classifications.</p>
           </div>
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#635BFF', background: 'rgba(99,91,255,0.08)', padding: '0.3rem 0.75rem', borderRadius: '100px' }}>
+            {filtered.length} RECORDS
+          </span>
+        </div>
 
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-               <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#A09B94' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-               <input 
-                style={styles.searchInput} 
-                placeholder="Search..." 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-               />
-            </div>
-            
-            <select 
-              style={{ padding: '0.65rem 1rem', border: '1px solid #DCD8D2', borderRadius: '12px', outline: 'none', background: 'white', fontSize: '0.85rem' }}
-              value={sortMode}
-              onChange={e => setSortMode(e.target.value as SortMode)}
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '2rem' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input 
+              style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.5rem', border: '1px solid #DCD8D2', borderRadius: '12px', outline: 'none', background: 'white', fontSize: '0.875rem' }} 
+              placeholder="Search history..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <select 
+            style={{ padding: '0.65rem 1rem', border: '1px solid #DCD8D2', borderRadius: '12px', outline: 'none', background: 'white', fontSize: '0.85rem' }}
+            value={sortMode}
+            onChange={e => setSortMode(e.target.value as SortMode)}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
 
-            <div style={{ display: 'flex', border: '1px solid #DCD8D2', borderRadius: '12px', overflow: 'hidden' }}>
-              <button onClick={() => setViewMode('grid')} style={{ padding: '0.6rem 1rem', border: 'none', background: viewMode === 'grid' ? '#635BFF' : 'white', color: viewMode === 'grid' ? 'white' : '#8C8780', cursor: 'pointer' }}>Grid</button>
-              <button onClick={() => setViewMode('list')} style={{ padding: '0.6rem 1rem', border: 'none', background: viewMode === 'list' ? '#635BFF' : 'white', color: viewMode === 'list' ? 'white' : '#8C8780', cursor: 'pointer' }}>List</button>
-            </div>
+          <div style={{ display: 'flex', border: '1px solid #DCD8D2', borderRadius: '12px', overflow: 'hidden' }}>
+            <button onClick={() => setViewMode('grid')} style={{ padding: '0.6rem 1rem', border: 'none', background: viewMode === 'grid' ? '#635BFF' : 'white', color: viewMode === 'grid' ? 'white' : '#8C8780', cursor: 'pointer' }}>Grid</button>
+            <button onClick={() => setViewMode('list')} style={{ padding: '0.6rem 1rem', border: 'none', background: viewMode === 'list' ? '#635BFF' : 'white', color: viewMode === 'list' ? 'white' : '#8C8780', cursor: 'pointer' }}>List</button>
           </div>
         </div>
 
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '5rem', color: '#635BFF', fontWeight: 700 }}>SYNCING RECORDS...</div>
         ) : (
-          <div style={viewMode === 'grid' ? styles.grid : { display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={viewMode === 'grid' ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' } : { display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {filtered.map(item => (
               <div 
                 key={item.ticket_id} 
-                style={viewMode === 'grid' ? styles.card(selectedItem?.ticket_id === item.ticket_id) : { background: 'white', border: '1px solid #DCD8D2', borderRadius: '16px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer' }}
+                style={{
+                  background: 'white',
+                  border: '1px solid #DCD8D2',
+                  borderRadius: '20px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  display: viewMode === 'list' ? 'flex' : 'block',
+                  alignItems: viewMode === 'list' ? 'center' : 'stretch',
+                  gap: viewMode === 'list' ? '1.5rem' : '0',
+                  padding: viewMode === 'list' ? '1rem' : '0'
+                }}
                 onClick={() => setSelectedItem(item)}
               >
-                <img src={item.image_url} style={viewMode === 'grid' ? styles.cardImg : { width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover' }} />
-                <div style={{ flex: 1, padding: viewMode === 'grid' ? '1.25rem' : '0' }}>
+                <img src={item.image_url} style={viewMode === 'grid' ? { width: '100%', height: '180px', objectFit: 'cover' } : { width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover' }} />
+                <div style={{ padding: viewMode === 'grid' ? '1.25rem' : '0' }}>
                   <div style={{ fontSize: '1rem', fontWeight: 700, color: '#141210', textTransform: 'capitalize' }}>{item.prediction}</div>
                   <div style={{ fontSize: '0.8rem', color: '#8C8780', marginTop: '4px' }}>{formatTime(item.timestamp)}</div>
                 </div>
@@ -245,7 +151,7 @@ export const HistoryPage = () => {
             ))}
           </div>
         )}
-      </div>
+      </main>
 
       {selectedItem && (
         <div 

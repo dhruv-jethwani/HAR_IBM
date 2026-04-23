@@ -7,6 +7,9 @@ import { Dashboard } from './components/pages/Dashboard';
 import { HistoryPage } from './components/pages/HistoryPage';
 import './index.css';
 
+import { SupportPage } from './components/pages/SupportPage';
+import { AdminDashboard } from './components/pages/AdminDashboard';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('auth_token');
@@ -33,6 +36,22 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           element={
             <ProtectedRoute>
               <HistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <ProtectedRoute>
+              <SupportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
