@@ -52,6 +52,7 @@ const Login: React.FC = () => {
       if (response.ok) {
         localStorage.setItem('auth_token', 'session_active');
         localStorage.setItem('user_email', result.email);
+        localStorage.setItem('user_role', result.role || 'user');
         navigate('/home');
       } else {
         setServerError(result.error || 'Login failed. Please try again.');
