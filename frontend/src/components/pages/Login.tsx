@@ -52,17 +52,17 @@ const Login: React.FC = () => {
       if (response.ok) {
         localStorage.setItem('auth_token', 'session_active');
         localStorage.setItem('user_email', result.email);
-		localStorage.setItem('user_name', result.name);
+        localStorage.setItem('user_name', result.name);
         
-        // Use result.role from backend, or check against admin email as fallback
-        const role = result.email === 'admin@gmail.com' ? 'admin' : (result.role || 'user');
+        // Use result.role from backend or logic
+        const role = result.role || (result.email === 'admin@gmail.com' ? 'admin' : 'user');
         localStorage.setItem('user_role', role);
 
-        // ROLE-BASED REDIRECT
+        // IMMEDIATE REDIRECT TO HOME BASE
         if (role === 'admin') {
-          navigate('/admin');
+          navigate('/admin', { replace: true });
         } else {
-          navigate('/home');
+          navigate('/home', { replace: true });
         }
       } else {
         setServerError(result.error || 'Login failed. Please try again.');

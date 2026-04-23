@@ -5,8 +5,8 @@ import { Sidebar } from '../Sidebar';
 interface Report {
   ticket_id: number;
   description: string;
-  image_urls?: string[]; // Optional array
-  image_url?: string;    // Legacy single string support
+  image_urls?: string[]; 
+  image_url?: string;    
   status: string;
   admin_reply: string | null;
   timestamp: string;
@@ -21,7 +21,6 @@ export const SupportPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
-  // Toast and File Ref
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,7 +35,6 @@ export const SupportPage = () => {
     fetchReports();
   }, [userEmail, navigate]);
 
-  // Auto-hide toast
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
@@ -82,7 +80,6 @@ export const SupportPage = () => {
         setDescription('');
         setImages([]);
         if (fileInputRef.current) fileInputRef.current.value = ""; 
-        
         fetchReports();
         setToast({ message: 'Problem reported successfully!', type: 'success' });
       } else {
@@ -106,25 +103,15 @@ export const SupportPage = () => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Internal Styles
   const attachmentBoxStyle: React.CSSProperties = {
-    width: '120px',
-    height: '120px',
-    borderRadius: '0.75rem',
-    border: '1px solid #E5E7EB',
-    overflow: 'hidden',
-    background: '#F9FAFB',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'transform 0.2s'
+    width: '120px', height: '120px', borderRadius: '0.75rem', border: '1px solid #E5E7EB',
+    overflow: 'hidden', background: '#F9FAFB', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.2s'
   };
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', background: 'rgb(250 249 247)', fontFamily: "'DM Sans', sans-serif" }}>
       
-      {/* SUCCESS/ERROR TOAST */}
       {toast && (
         <div style={{
           position: 'fixed', top: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
@@ -197,18 +184,32 @@ export const SupportPage = () => {
               <div style={{ textAlign: 'center', padding: '3rem', background: '#F3F4F6', borderRadius: '1.5rem', color: '#6B7280' }}><p>No reports found.</p></div>
             ) : (
               <div style={{ background: 'white', borderRadius: '1rem', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                {reports.map((report) => (
-                  <div key={report.ticket_id} onClick={() => setSelectedReport(report)} style={{ display: 'flex', alignItems: 'center', padding: '1rem 1.5rem', borderBottom: '1px solid #F3F4F6', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'} onMouseLeave={(e) => e.currentTarget.style.background = 'white'}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF' }}>#{report.ticket_id}</span>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{report.description}</span>
+                {reports.map((report) => {
+                  // Calculate image count based on array or single string fallback
+                  const imgCount = report.image_urls ? report.image_urls.length : (report.image_url ? 1 : 0);
+
+                  return (
+                    <div 
+                      key={report.ticket_id} 
+                      onClick={() => setSelectedReport(report)} 
+                      style={{ display: 'flex', alignItems: 'center', padding: '1rem 1.5rem', borderBottom: '1px solid #F3F4F6', cursor: 'pointer', transition: 'background 0.2s' }} 
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'} 
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF' }}>#{report.ticket_id}</span>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{report.description}</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                          {new Date(report.timestamp).toLocaleDateString()}
+                          {imgCount > 0 && ` • ${imgCount} image${imgCount > 1 ? 's' : ''} attached`}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{new Date(report.timestamp).toLocaleDateString()}</div>
+                      <span style={{ padding: '0.25rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 700, background: report.status === 'Resolved' ? '#DEF7EC' : report.status === 'In Progress' ? '#E1EFFE' : '#F3F4F6', color: report.status === 'Resolved' ? '#03543F' : report.status === 'In Progress' ? '#1E429F' : '#374151' }}>{report.status}</span>
                     </div>
-                    <span style={{ padding: '0.25rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 700, background: report.status === 'Resolved' ? '#DEF7EC' : report.status === 'In Progress' ? '#E1EFFE' : '#F3F4F6', color: report.status === 'Resolved' ? '#03543F' : report.status === 'In Progress' ? '#1E429F' : '#374151' }}>{report.status}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -232,18 +233,15 @@ export const SupportPage = () => {
                 <p style={{ fontSize: '1rem', color: '#374151', lineHeight: 1.6 }}>{selectedReport.description}</p>
               </div>
 
-              {/* IMAGE DISPLAY LOGIC */}
               {(selectedReport.image_urls || selectedReport.image_url) && (
                 <div>
                   <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase' }}>Attachments</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                    {/* Map through Array */}
                     {selectedReport.image_urls?.map((url, i) => (
                       <div key={i} style={attachmentBoxStyle} onClick={() => window.open(url, '_blank')}>
                         <img src={url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                       </div>
                     ))}
-                    {/* Fallback for single string */}
                     {(!selectedReport.image_urls || selectedReport.image_urls.length === 0) && selectedReport.image_url && (
                       <div style={attachmentBoxStyle} onClick={() => window.open(selectedReport.image_url, '_blank')}>
                         <img src={selectedReport.image_url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
