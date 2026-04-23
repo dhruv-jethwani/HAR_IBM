@@ -187,21 +187,33 @@ export const AdminDashboard = () => {
                   </p>
                 </div>
 
-                {(selectedTicket.image_urls || (selectedTicket as any).image_url) && (
+                {((selectedTicket.image_urls && selectedTicket.image_urls.length > 0) || (selectedTicket as any).image_url) && (
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(160 155 148)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Attachments ({(selectedTicket.image_urls || (selectedTicket as any).image_url ? [1] : []).length})</div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(160 155 148)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
+                      Attachments ({(selectedTicket.image_urls?.length || 0) + ((selectedTicket as any).image_url ? 1 : 0)})
+                    </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                      {(selectedTicket.image_urls || [(selectedTicket as any).image_url]).map((url, i) => (
+                      {/* Multi-image display */}
+                      {selectedTicket.image_urls?.map((url, i) => (
                         url && (
                           <img 
-                            key={i} 
+                            key={`multi-${i}`} 
                             src={url} 
                             alt="Issue" 
                             onClick={() => window.open(url, '_blank')}
-                            style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '12px', border: '1px solid rgb(240 238 235)', cursor: 'pointer' }} 
+                            style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '12px', border: '1px solid rgb(240 238 235)', cursor: 'pointer', background: 'rgb(250 249 247)' }} 
                           />
                         )
                       ))}
+                      {/* Legacy single-image fallback */}
+                      {!(selectedTicket.image_urls?.length) && (selectedTicket as any).image_url && (
+                        <img 
+                          src={(selectedTicket as any).image_url} 
+                          alt="Issue" 
+                          onClick={() => window.open((selectedTicket as any).image_url, '_blank')}
+                          style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '12px', border: '1px solid rgb(240 238 235)', cursor: 'pointer', background: 'rgb(250 249 247)' }} 
+                        />
+                      )}
                     </div>
                   </div>
                 )}

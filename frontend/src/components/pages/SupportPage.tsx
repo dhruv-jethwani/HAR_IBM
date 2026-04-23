@@ -241,7 +241,7 @@ export const SupportPage = () => {
                         </span>
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                        {new Date(report.timestamp).toLocaleDateString()} • {(report.image_urls || (report as any).image_url ? [1] : []).length} images
+                        {new Date(report.timestamp).toLocaleDateString()} • {(report.image_urls?.length || 0) + ((report as any).image_url ? 1 : 0)} images
                       </div>
                     </div>
                     <span style={{
@@ -305,41 +305,26 @@ export const SupportPage = () => {
                   <p style={{ fontSize: '1rem', color: '#374151', lineHeight: 1.6, margin: 0 }}>{selectedReport.description}</p>
                 </div>
 
-                {(selectedReport.image_urls || (selectedReport as any).image_url) && (
+                {((selectedReport.image_urls && selectedReport.image_urls.length > 0) || (selectedReport as any).image_url) && (
                   <div>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Attachments ({(selectedReport.image_urls || (selectedReport as any).image_url ? [1] : []).length})</p>
-                    <div style={{ 
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '12px'
-                    }}>
-                      {(selectedReport.image_urls || [(selectedReport as any).image_url]).map((url, i) => (
+                    <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Attachments ({(selectedReport.image_urls?.length || 0) + ((selectedReport as any).image_url ? 1 : 0)})
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                      {/* Show multi-images if they exist */}
+                      {selectedReport.image_urls?.map((url, i) => (
                         url && (
-                          <div key={i} style={{ 
-                            width: '120px', 
-                            height: '120px', 
-                            borderRadius: '0.75rem', 
-                            border: '1px solid #E5E7EB', 
-                            overflow: 'hidden',
-                            background: '#F9FAFB',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            transition: 'transform 0.2s'
-                          }} 
-                          onClick={() => window.open(url, '_blank')}
-                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                          >
-                            <img 
-                              src={url} 
-                              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
-                              alt={`Attachment ${i + 1}`} 
-                            />
+                          <div key={`multi-${i}`} style={{ width: '120px', height: '120px', borderRadius: '0.75rem', border: '1px solid #E5E7EB', overflow: 'hidden', background: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => window.open(url, '_blank')}>
+                            <img src={url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} alt="Attachment" />
                           </div>
                         )
                       ))}
+                      {/* Fallback for legacy single image */}
+                      {!(selectedReport.image_urls?.length) && (selectedReport as any).image_url && (
+                        <div style={{ width: '120px', height: '120px', borderRadius: '0.75rem', border: '1px solid #E5E7EB', overflow: 'hidden', background: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => window.open((selectedReport as any).image_url, '_blank')}>
+                          <img src={(selectedReport as any).image_url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} alt="Attachment" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
