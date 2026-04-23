@@ -104,6 +104,8 @@ class ProblemReport(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     description = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(500), nullable=True) # Nullable in case a user reports a text-only problem
+    status = db.Column(db.String(50), default="Pending")
+    admin_reply = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(IST))
     
 with app.app_context():
@@ -346,6 +348,44 @@ def report_problem():
     db.session.commit()
 
     return jsonify({"message": "Problem reported successfully!"}), 201
+
+# 1. Get reports for a specific user (for SupportPage.tsx)
+@app.route('/api/user-reports/<email>', methods=['GET'])
+def get_user_reports(email):
+    user = User.check_user(email)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    reports = ProblemReport.query.filter_by(user_id=user.id).order_by(ProblemReport.timestamp.desc()).all()
+    
+    return jsonify([{
+        "ticket_id": r.id,
+        "description": r.description,
+        "image_url": r.image_url,
+        "status": getattr(r, 'status', 'Open'), # Default to Open if column doesn't exist yet
+        "admin_reply": getattr(r, 'admin_reply', None),
+        "timestamp": r.timestamp.isoformat()
+    } for r in reports])
+
+# 2. Update a report (for AdminDashboard.tsx)
+@app.route('/api/admin/update-report', methods=['POST'])
+def update_report():
+    data = request.get_json()
+    admin_email = data.get('admin_email')
+    
+    if admin_email != ADMIN_EMAIL:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    report = db.session.get(ProblemReport, data.get('ticket_id'))
+    if not report:
+        return jsonify({"error": "Report not found"}), 404
+
+    # Update fields (Ensure these columns exist in your ProblemReport model!)
+    report.status = data.get('status')
+    report.admin_reply = data.get('admin_reply')
+    
+    db.session.commit()
+    return jsonify({"message": "Report updated successfully"})
 
 @app.route('/api/admin-dashboard', methods=['POST'])
 def admin_dashboard():

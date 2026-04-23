@@ -6,6 +6,7 @@ interface NavItem {
   icon: React.ReactNode;
   active: boolean;
   onClick: () => void;
+  role: 'user' | 'admin' | 'both';
 }
 
 interface SidebarProps {
@@ -19,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
   const navItems: NavItem[] = [
     {
       label: 'Analysis',
+      role: 'user',
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -29,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
     },
     {
       label: 'History',
+      role: 'user',
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
@@ -40,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
     },
     {
       label: 'Support',
+      role: 'user',
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
@@ -48,8 +52,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
       active: activePage === 'Support',
       onClick: () => navigate('/support'),
     },
-    ...(userRole === 'admin' ? [{
+    {
       label: 'Admin Panel',
+      role: 'admin',
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -57,12 +62,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
       ),
       active: activePage === 'Admin',
       onClick: () => navigate('/admin'),
-    }] : []),
-  ].filter(item => {
-    // If we are on Admin page, only show Admin link
-    if (activePage === 'Admin') return item.label === 'Admin Panel';
-    return true;
-  });
+    },
+  ];
+
+  // Filter logic: Admins only see Admin items. Users only see User items.
+  const filteredItems = navItems.filter(item => item.role === userRole);
 
   return (
     <aside style={{
@@ -82,10 +86,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
 
       <div style={{ flexShrink: 0, flex: 1 }}>
         <p style={{ padding: '0 0.75rem', marginBottom: '0.5rem', fontSize: '0.625rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgb(180 175 168)' }}>
-          Platform
+          {userRole === 'admin' ? 'Administration' : 'Platform'}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {navItems.map((item) => (
+          {filteredItems.map((item) => (
             <button
               key={item.label}
               onClick={item.onClick}
@@ -105,12 +109,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
                 alignItems: 'center',
                 gap: '10px',
                 transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={e => {
-                if (!item.active) e.currentTarget.style.background = 'rgb(245 244 242)';
-              }}
-              onMouseLeave={e => {
-                if (!item.active) e.currentTarget.style.background = 'transparent';
               }}
             >
               {item.icon}
@@ -136,16 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
             borderRadius: '12px',
             fontWeight: 600,
             fontSize: '0.9rem',
-            transition: 'all 0.2s ease',
             fontFamily: "'DM Sans', sans-serif",
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(220, 38, 38, 0.05)';
-            e.currentTarget.style.borderColor = 'rgba(220, 38, 38, 0.2)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.borderColor = 'transparent';
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
