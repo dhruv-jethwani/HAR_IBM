@@ -306,53 +306,60 @@ def report_problem():
 
     image_url = None
     
-    # Handle image upload to ImgBB if an image was provided
-    if 'image' in request.files:
-        file = request.files['image']
-        if file and allowed_file(file.filename):
-            ext = os.path.splitext(file.filename)[1].lower()
-            temp_filename = f"report_{int(time.time())}_{user.id}{ext}"
-            temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
+    # Check for 'images' (what your frontend sends) or 'image' (fallback)
+    file = request.files.get('images') or request.files.get('image')
+    
+    if file and allowed_file(file.filename):
+        ext = os.path.splitext(file.filename)[1].lower()
+        temp_filename = f"report_{int(time.time())}_{user.id}{ext}"
+        temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
+        
+        try:
+            file.save(temp_path)
             
-            try:
-                file.save(temp_path)
-                
-                with open(temp_path, "rb") as f:
-                    base64_image = base64.b64encode(f.read())
+            with open(temp_path, "rb") as f:
+                base64_image = base64.b64encode(f.read())
 
-                # Upload to ImgBB
-                timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-                payload = {
-                    "key": IMGBB_API_KEY,
-                    "image": base64_image,
-                    "name": f"bug_report_{timestamp_str}"
-                }
-                
-                imgbb_res = requests.post("https://api.imgbb.com/1/upload", data=payload).json()
-                
-                if 'data' in imgbb_res:
-                    image_url = imgbb_res['data']['url']
+            # Upload to ImgBB
+            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            payload = {
+                "key": IMGBB_API_KEY,
+                "image": base64_image,
+                "name": f"bug_report_{timestamp_str}"
+            }
+            
+            # Perform request
+            response = requests.post("https://api.imgbb.com/1/upload", data=payload)
+            imgbb_res = response.json()
+            
+            if response.status_code == 200 and 'data' in imgbb_res:
+                image_url = imgbb_res['data']['url']
+            else:
+                print(f"ImgBB Error Response: {imgbb_res}")
                     
-            except Exception as e:
-                print(f"ImgBB Upload error: {e}")
-                return jsonify({"error": "Failed to upload image."}), 500
-            finally:
-                if os.path.exists(temp_path):
-                    try:
-                        os.remove(temp_path)
-                    except Exception as cleanup_error:
-                        print(f"Cleanup warning: {cleanup_error}")
+        except Exception as e:
+            print(f"ImgBB Upload process error: {e}")
+            # We don't necessarily return 500 here so the text description still gets saved
+        finally:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception as cleanup_error:
+                    print(f"Cleanup warning: {cleanup_error}")
 
     # Save the ticket to the database
-    new_report = ProblemReport(
-        user_id=user.id, 
-        description=description, 
-        image_url=image_url
-    )
-    db.session.add(new_report)
-    db.session.commit()
-
-    return jsonify({"message": "Problem reported successfully!"}), 201
+    try:
+        new_report = ProblemReport(
+            user_id=user.id, 
+            description=description, 
+            image_url=image_url # This will be the ImgBB URL or None
+        )
+        db.session.add(new_report)
+        db.session.commit()
+        return jsonify({"message": "Problem reported successfully!", "image_url": image_url}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Database save failed: {str(e)}"}), 500
 
 # 1. Get reports for a specific user (for SupportPage.tsx)
 @app.route('/api/user-reports/<email>', methods=['GET'])

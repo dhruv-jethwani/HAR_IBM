@@ -106,9 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
         </div>
       </div>
 
-      {/* BOTTOM SECTION: Support and Logout */}
       <div style={{ flexShrink: 0 }}>
-        {/* Report Problem Button - Only for regular users */}
         {userRole === 'user' && (
           <button
             onClick={() => navigate('/support')}
@@ -118,8 +116,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
               alignItems: 'center',
               gap: '10px',
               padding: '0.75rem 1rem',
-              background: activePage === 'Support' ? 'rgb(240 239 255)' : 'transparent',
-              color: activePage === 'Support' ? 'rgb(99 91 255)' : 'rgb(80 75 70)',
+              background: activePage === 'Support' ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
+              color: activePage === 'Support' ? '#D97706' : 'rgb(80 75 70)',
               border: 'none',
               borderRadius: '12px',
               fontWeight: 600,
@@ -129,8 +127,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
               fontSize: '0.9rem',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            {/* The Yellow Triangle Exclamation Icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={activePage === 'Support' ? '#D97706' : '#F59E0B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
             Report Problem
           </button>
