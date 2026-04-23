@@ -10,10 +10,26 @@ import './index.css';
 import { SupportPage } from './components/pages/SupportPage';
 import { AdminDashboard } from './components/pages/AdminDashboard';
 
-// Protected Route Component
+// Protected Route Component (For Normal Users only)
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('auth_token');
-  return token ? <>{children}</> : <Navigate to="/login" replace />;
+  const role = localStorage.getItem('user_role');
+  
+  if (!token) return <Navigate to="/login" replace />;
+  if (role === 'admin') return <Navigate to="/admin" replace />;
+  
+  return <>{children}</>;
+};
+
+// Admin Route Component (For Admins only)
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('auth_token');
+  const role = localStorage.getItem('user_role');
+  
+  if (!token) return <Navigate to="/login" replace />;
+  if (role !== 'admin') return <Navigate to="/home" replace />;
+  
+  return <>{children}</>;
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -50,9 +66,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <AdminDashboard />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route path="*" element={<Navigate to="/login" replace />} />

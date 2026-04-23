@@ -7,7 +7,7 @@ interface Ticket {
   user_email: string;
   user_name: string;
   description: string;
-  image_url: string | null;
+  image_urls: string[];
   status: string;
   admin_reply: string | null;
   timestamp: string;
@@ -176,7 +176,7 @@ export const AdminDashboard = () => {
 
             {/* Edit Panel */}
             {selectedTicket && (
-              <div style={{ background: 'white', borderRadius: '24px', border: '1px solid rgb(220 216 210)', padding: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', alignSelf: 'start' }}>
+              <div style={{ background: 'white', borderRadius: '24px', border: '1px solid rgb(220 216 210)', padding: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', alignSelf: 'start', maxHeight: '80vh', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                   <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'rgb(20 18 16)' }}>Ticket Details</h2>
                   <button onClick={() => setSelectedTicket(null)} style={{ background: 'transparent', border: 'none', color: 'rgb(180 175 168)', cursor: 'pointer', fontSize: '1.5rem' }}>&times;</button>
@@ -189,10 +189,22 @@ export const AdminDashboard = () => {
                   </p>
                 </div>
 
-                {selectedTicket.image_url && (
+                {(selectedTicket.image_urls || (selectedTicket as any).image_url) && (
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(160 155 148)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Attachment</div>
-                    <img src={selectedTicket.image_url} alt="Issue" style={{ width: '100%', borderRadius: '16px', border: '1px solid rgb(240 238 235)' }} />
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(160 155 148)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Attachments ({(selectedTicket.image_urls || (selectedTicket as any).image_url ? [1] : []).length})</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {(selectedTicket.image_urls || [(selectedTicket as any).image_url]).map((url, i) => (
+                        url && (
+                          <img 
+                            key={i} 
+                            src={url} 
+                            alt="Issue" 
+                            onClick={() => window.open(url, '_blank')}
+                            style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '12px', border: '1px solid rgb(240 238 235)', cursor: 'pointer' }} 
+                          />
+                        )
+                      ))}
+                    </div>
                   </div>
                 )}
 

@@ -59,9 +59,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
       onClick: () => navigate('/admin'),
     }] : []),
   ].filter(item => {
-    // If we are on Admin page, only show Admin link
-    if (activePage === 'Admin') return item.label === 'Admin Panel';
-    return true;
+    if (userRole === 'admin') {
+      return item.label === 'Admin Panel';
+    }
+    return item.label !== 'Admin Panel';
   });
 
   return (

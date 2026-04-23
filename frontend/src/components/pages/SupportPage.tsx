@@ -5,7 +5,7 @@ import { Sidebar } from '../Sidebar';
 interface Report {
   ticket_id: number;
   description: string;
-  image_url: string | null;
+  image_urls: string[];
   status: string;
   admin_reply: string | null;
   timestamp: string;
@@ -36,49 +36,22 @@ export const SupportPage = () => {
       const response = await fetch(`${API_BASE}/api/user-reports/${userEmail}`);
       if (response.ok) {
         const data = await response.json();
-        setReports(data);
+        if (Array.isArray(data)) {
+          setReports(data);
+        } else {
+          console.error('Expected array of reports, got:', data);
+          setReports([]);
+        }
+      } else {
+        console.error('Server returned error:', response.status);
+        setReports([]);
       }
     } catch (error) {
       console.error('Failed to fetch reports:', error);
+      setReports([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const createCollage = (files: File[]): Promise<Blob> => {
-    return new Promise((resolve) => {
-      const loadedImages: HTMLImageElement[] = [];
-      let loadedCount = 0;
-
-      files.forEach((file) => {
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          loadedImages.push(img);
-          loadedCount++;
-          if (loadedCount === files.length) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d')!;
-            
-            // Calculate dimensions
-            const maxWidth = Math.max(...loadedImages.map(i => i.width));
-            const totalHeight = loadedImages.reduce((sum, i) => sum + i.height, 0);
-            
-            canvas.width = maxWidth;
-            canvas.height = totalHeight;
-
-            let currentY = 0;
-            loadedImages.forEach((i) => {
-              ctx.drawImage(i, 0, currentY);
-              currentY += i.height;
-              URL.revokeObjectURL(i.src);
-            });
-
-            canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
-          }
-        };
-      });
-    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,14 +63,10 @@ export const SupportPage = () => {
     formData.append('email', userEmail!);
     formData.append('description', description);
     
-    if (images.length > 0) {
-      if (images.length === 1) {
-        formData.append('image', images[0]);
-      } else {
-        const collageBlob = await createCollage(images);
-        formData.append('image', collageBlob, 'report_collage.jpg');
-      }
-    }
+    // Append multiple images individually
+    images.forEach(img => {
+      formData.append('images', img);
+    });
 
     try {
       const response = await fetch(`${API_BASE}/api/report-problem`, {
@@ -131,6 +100,8 @@ export const SupportPage = () => {
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
+
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   return (
     <div style={{
@@ -180,7 +151,7 @@ export const SupportPage = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Upload Images (Cumulative)</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Upload Images</label>
                 <input
                   type="file"
                   multiple
@@ -236,7 +207,7 @@ export const SupportPage = () => {
             </form>
           </section>
 
-          {/* Reports History */}
+          {/* Reports History - LIST VIEW */}
           <section>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', color: '#111827' }}>Your Reports</h2>
             {loading ? (
@@ -246,46 +217,43 @@ export const SupportPage = () => {
                 <p>No reports found.</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ background: 'white', borderRadius: '1rem', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
                 {reports.map((report) => (
-                  <div key={report.ticket_id} style={{
-                    background: 'white',
-                    padding: '1.25rem',
-                    borderRadius: '1.25rem',
-                    border: '1px solid #E5E7EB',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>Ticket #{report.ticket_id}</span>
-                      <span style={{
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '2rem',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        background: report.status === 'Resolved' ? '#DEF7EC' : report.status === 'In Progress' ? '#E1EFFE' : '#F3F4F6',
-                        color: report.status === 'Resolved' ? '#03543F' : report.status === 'In Progress' ? '#1E429F' : '#374151'
-                      }}>
-                        {report.status}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.95rem', color: '#374151', marginBottom: '1rem', lineHeight: 1.5 }}>{report.description}</p>
-                    
-                    {report.image_url && (
-                      <div style={{ marginBottom: '1rem' }}>
-                        <img src={report.image_url} alt="Report attachment" style={{ maxWidth: '100px', borderRadius: '0.5rem', border: '1px solid #E5E7EB' }} />
+                  <div 
+                    key={report.ticket_id} 
+                    onClick={() => setSelectedReport(report)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '1rem 1.5rem',
+                      borderBottom: '1px solid #F3F4F6',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF' }}>#{report.ticket_id}</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {report.description}
+                        </span>
                       </div>
-                    )}
-
-                    {report.admin_reply && (
-                      <div style={{ background: '#F9FAFB', padding: '1rem', borderRadius: '0.75rem', borderLeft: '4px solid #635BFF' }}>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#635BFF', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Admin Response</p>
-                        <p style={{ fontSize: '0.9rem', color: '#4B5563', fontStyle: 'italic' }}>{report.admin_reply}</p>
+                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                        {new Date(report.timestamp).toLocaleDateString()} • {(report.image_urls || (report as any).image_url ? [1] : []).length} images
                       </div>
-                    )}
-                    
-                    <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#9CA3AF' }}>
-                      {new Date(report.timestamp).toLocaleString()}
                     </div>
+                    <span style={{
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '2rem',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      background: report.status === 'Resolved' ? '#DEF7EC' : report.status === 'In Progress' ? '#E1EFFE' : '#F3F4F6',
+                      color: report.status === 'Resolved' ? '#03543F' : report.status === 'In Progress' ? '#1E429F' : '#374151'
+                    }}>
+                      {report.status}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -293,6 +261,115 @@ export const SupportPage = () => {
           </section>
         </div>
       </main>
+
+      {/* DETAIL MODAL */}
+      {selectedReport && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '2rem'
+        }} onClick={() => setSelectedReport(null)}>
+          <div style={{
+            background: 'white',
+            width: '100%',
+            maxWidth: '600px',
+            borderRadius: '1.5rem',
+            padding: '2rem',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+            position: 'relative',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedReport(null)}
+              style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#9CA3AF' }}
+            >
+              &times;
+            </button>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ticket Reference</span>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginTop: '0.25rem', letterSpacing: '-0.02em' }}>Report #{selectedReport.ticket_id}</h3>
+            </div>
+
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</p>
+                  <p style={{ fontSize: '1rem', color: '#374151', lineHeight: 1.6, margin: 0 }}>{selectedReport.description}</p>
+                </div>
+
+                {(selectedReport.image_urls || (selectedReport as any).image_url) && (
+                  <div>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Attachments ({(selectedReport.image_urls || (selectedReport as any).image_url ? [1] : []).length})</p>
+                    <div style={{ 
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '12px'
+                    }}>
+                      {(selectedReport.image_urls || [(selectedReport as any).image_url]).map((url, i) => (
+                        url && (
+                          <div key={i} style={{ 
+                            width: '120px', 
+                            height: '120px', 
+                            borderRadius: '0.75rem', 
+                            border: '1px solid #E5E7EB', 
+                            overflow: 'hidden',
+                            background: '#F9FAFB',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s'
+                          }} 
+                          onClick={() => window.open(url, '_blank')}
+                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                          >
+                            <img 
+                              src={url} 
+                              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+                              alt={`Attachment ${i + 1}`} 
+                            />
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedReport.admin_reply && (
+                  <div style={{ background: '#F5F3FF', padding: '1.25rem', borderRadius: '1rem', borderLeft: '4px solid #635BFF', marginTop: '0.5rem' }}>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#635BFF', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Admin Response</p>
+                    <p style={{ fontSize: '0.95rem', color: '#4B5563', fontStyle: 'italic', lineHeight: 1.5, margin: 0 }}>{selectedReport.admin_reply}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: selectedReport.status === 'Resolved' ? '#10B981' : '#F59E0B' }}></div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827' }}>{selectedReport.status}</span>
+                <span style={{ color: '#9CA3AF', fontSize: '0.85rem' }}>•</span>
+                <span style={{ fontSize: '0.85rem', color: '#6B7280' }}>{new Date(selectedReport.timestamp).toLocaleString()}</span>
+              </div>
+              <button 
+                onClick={() => setSelectedReport(null)}
+                style={{ background: '#F3F4F6', color: '#374151', padding: '0.6rem 1.25rem', borderRadius: '0.75rem', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
