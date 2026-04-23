@@ -103,7 +103,7 @@ class ProblemReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    image_url = db.Column(db.String(500), nullable=True) # Nullable in case a user reports a text-only problem
+    image_url = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(50), default="Pending")
     admin_reply = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(IST))
@@ -293,7 +293,6 @@ def upload_image():
 
 @app.route('/api/report-problem', methods=['POST'])
 def report_problem():
-    # Because of the file upload, we use form data instead of JSON
     email = request.form.get('email')
     description = request.form.get('description')
     
@@ -304,78 +303,65 @@ def report_problem():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    image_url = None
+    # Get the list of all files sent under the 'images' key
+    files = request.files.getlist('images')
+    uploaded_urls = []
     
-    # Check for 'images' (what your frontend sends) or 'image' (fallback)
-    file = request.files.get('images') or request.files.get('image')
-    
-    if file and allowed_file(file.filename):
-        ext = os.path.splitext(file.filename)[1].lower()
-        temp_filename = f"report_{int(time.time())}_{user.id}{ext}"
-        temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
-        
-        try:
-            file.save(temp_path)
+    for file in files:
+        if file and allowed_file(file.filename):
+            ext = os.path.splitext(file.filename)[1].lower()
+            temp_filename = f"report_{int(time.time())}_{user.id}_{len(uploaded_urls)}{ext}"
+            temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
             
-            with open(temp_path, "rb") as f:
-                base64_image = base64.b64encode(f.read())
+            try:
+                file.save(temp_path)
+                with open(temp_path, "rb") as f:
+                    base64_image = base64.b64encode(f.read())
 
-            # Upload to ImgBB
-            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            payload = {
-                "key": IMGBB_API_KEY,
-                "image": base64_image,
-                "name": f"bug_report_{timestamp_str}"
-            }
-            
-            # Perform request
-            response = requests.post("https://api.imgbb.com/1/upload", data=payload)
-            imgbb_res = response.json()
-            
-            if response.status_code == 200 and 'data' in imgbb_res:
-                image_url = imgbb_res['data']['url']
-            else:
-                print(f"ImgBB Error Response: {imgbb_res}")
+                payload = {
+                    "key": IMGBB_API_KEY,
+                    "image": base64_image,
+                    "name": f"bug_report_{int(time.time())}"
+                }
+                
+                imgbb_res = requests.post("https://api.imgbb.com/1/upload", data=payload).json()
+                
+                if 'data' in imgbb_res:
+                    uploaded_urls.append(imgbb_res['data']['url'])
                     
-        except Exception as e:
-            print(f"ImgBB Upload process error: {e}")
-            # We don't necessarily return 500 here so the text description still gets saved
-        finally:
-            if os.path.exists(temp_path):
-                try:
+            except Exception as e:
+                print(f"ImgBB Upload error for one file: {e}")
+            finally:
+                if os.path.exists(temp_path):
                     os.remove(temp_path)
-                except Exception as cleanup_error:
-                    print(f"Cleanup warning: {cleanup_error}")
 
-    # Save the ticket to the database
-    try:
-        new_report = ProblemReport(
-            user_id=user.id, 
-            description=description, 
-            image_url=image_url # This will be the ImgBB URL or None
-        )
-        db.session.add(new_report)
-        db.session.commit()
-        return jsonify({"message": "Problem reported successfully!", "image_url": image_url}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database save failed: {str(e)}"}), 500
+    # Store URLs as a single comma-separated string
+    final_image_string = ",".join(uploaded_urls) if uploaded_urls else None
+
+    new_report = ProblemReport(
+        user_id=user.id, 
+        description=description, 
+        image_url=final_image_string
+    )
+    db.session.add(new_report)
+    db.session.commit()
+
+    return jsonify({"message": "Problem reported successfully!"}), 201
 
 # 1. Get reports for a specific user (for SupportPage.tsx)
 @app.route('/api/user-reports/<email>', methods=['GET'])
 def get_user_reports(email):
     user = User.check_user(email)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
+    if not user: return jsonify({"error": "User not found"}), 404
     
     reports = ProblemReport.query.filter_by(user_id=user.id).order_by(ProblemReport.timestamp.desc()).all()
     
     return jsonify([{
         "ticket_id": r.id,
         "description": r.description,
-        "image_url": r.image_url,
-        "status": getattr(r, 'status', 'Open'), # Default to Open if column doesn't exist yet
-        "admin_reply": getattr(r, 'admin_reply', None),
+        "image_urls": r.image_url.split(',') if r.image_url else [], # SEND AS ARRAY
+        "status": r.status,
+        "admin_reply": r.admin_reply,
         "timestamp": r.timestamp.isoformat()
     } for r in reports])
 
@@ -411,40 +397,25 @@ def update_report():
 @app.route('/api/admin-dashboard', methods=['POST'])
 def admin_dashboard():
     data = request.get_json()
-    
-    if not data or 'email' not in data:
-        return jsonify({"error": "Email is required"}), 400
-        
     user_email = data.get('email')
-    
-    # Verify Admin Status
     if user_email != ADMIN_EMAIL:
-        return jsonify({"error": "Unauthorized. Admin access restricted."}), 403
+        return jsonify({"error": "Unauthorized"}), 403
 
-    # Fetch all problem reports, newest first
     reports = ProblemReport.query.order_by(ProblemReport.timestamp.desc()).all()
-    
-    # Format the data to send to the frontend
     tickets = []
     for report in reports:
-        # Get the user who submitted this report to include their email/name
         reporting_user = db.session.get(User, report.user_id) 
-        
         tickets.append({
             "ticket_id": report.id,
             "user_email": reporting_user.email if reporting_user else "Unknown",
             "user_name": reporting_user.name if reporting_user else "Unknown",
             "description": report.description,
-            "image_url": report.image_url, # Will be null if no image was uploaded
+            "image_urls": report.image_url.split(',') if report.image_url else [], # SEND AS ARRAY
             "timestamp": report.timestamp.isoformat(),
-            "status": report.status,        # Make sure this is included!
-    		"admin_reply": report.admin_reply # Make sure this is included!
+            "status": report.status,
+            "admin_reply": report.admin_reply
         })
-    
-    return jsonify({
-        "message": "Welcome Admin",
-        "tickets": tickets
-    }), 200
+    return jsonify({"tickets": tickets}), 200
 
 # Route to see your uploaded images in browser
 @app.route('/static/uploads/<filename>')

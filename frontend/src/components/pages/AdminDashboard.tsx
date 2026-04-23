@@ -7,7 +7,7 @@ interface Ticket {
   user_email: string;
   user_name: string;
   description: string;
-  image_url: string | null;
+  image_urls: string[];
   status: string;
   admin_reply: string | null;
   timestamp: string;
@@ -21,9 +21,13 @@ export const AdminDashboard = () => {
   const [reply, setReply] = useState('');
   const [status, setStatus] = useState('');
   const [updating, setUpdating] = useState(false);
+  
+  // Toast State
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
   const userEmail = localStorage.getItem('user_email');
   const userRole = localStorage.getItem('user_role');
-  const userName = localStorage.getItem('user_name') || 'Admin'; // Retrieve Admin Name
+  const userName = localStorage.getItem('user_name') || 'Admin';
 
   const API_BASE = import.meta.env.VITE_API_URL || 'https://har-backend-10x1.onrender.com';
 
@@ -34,6 +38,14 @@ export const AdminDashboard = () => {
     }
     fetchTickets();
   }, [userEmail, userRole, navigate]);
+
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -75,15 +87,16 @@ export const AdminDashboard = () => {
       });
 
       if (response.ok) {
-        alert('Ticket updated successfully!');
+        setToast({ message: 'Ticket updated successfully!', type: 'success' });
         setReply('');
         setSelectedTicket(null);
-        fetchTickets(); // Reload list to see changes
+        fetchTickets(); 
       } else {
-        alert('Failed to update ticket.');
+        setToast({ message: 'Failed to update ticket.', type: 'error' });
       }
     } catch (error) {
       console.error('Error updating ticket:', error);
+      setToast({ message: 'An error occurred while updating.', type: 'error' });
     } finally {
       setUpdating(false);
     }
@@ -97,6 +110,19 @@ export const AdminDashboard = () => {
       background: 'rgb(250 249 247)',
       fontFamily: "'DM Sans', sans-serif"
     }}>
+      
+      {/* Toast Notification UI */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          background: toast.type === 'success' ? '#10B981' : '#EF4444', color: 'white',
+          padding: '1rem 2rem', borderRadius: '1rem', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          fontWeight: 700, display: 'flex', alignItems: 'center', gap: '12px', animation: 'fadeUp 0.3s ease-out'
+        }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
+        </div>
+      )}
+
       <Sidebar activePage="Admin" />
 
       <main style={{ flex: 1, overflowY: 'auto', padding: '2.5rem 4rem' }}>
@@ -117,6 +143,7 @@ export const AdminDashboard = () => {
           <div style={{ textAlign: 'center', padding: '5rem', color: '#635BFF', fontWeight: 700 }}>SYNCING REPORTS...</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: selectedTicket ? '1fr 400px' : '1fr', gap: '2rem' }}>
+            
             <div style={{ background: 'white', borderRadius: '24px', border: '1px solid rgb(220 216 210)', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ background: 'rgb(250 249 247)', borderBottom: '1px solid rgb(220 216 210)' }}>
@@ -142,10 +169,7 @@ export const AdminDashboard = () => {
                       </td>
                       <td style={{ padding: '1rem' }}>
                         <span style={{
-                          padding: '0.3rem 0.75rem',
-                          borderRadius: '100px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
+                          padding: '0.3rem 0.75rem', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 700,
                           background: ticket.status === 'Resolved' ? '#DEF7EC' : ticket.status === 'In Progress' ? '#E1EFFE' : 'rgb(240 238 235)',
                           color: ticket.status === 'Resolved' ? '#03543F' : ticket.status === 'In Progress' ? '#1E429F' : 'rgb(80 75 70)'
                         }}>
@@ -156,14 +180,8 @@ export const AdminDashboard = () => {
                         {new Date(ticket.timestamp).toLocaleDateString()}
                       </td>
                       <td style={{ padding: '1rem' }}>
-                        <button 
-                          onClick={() => {
-                            setSelectedTicket(ticket);
-                            setStatus(ticket.status);
-                            setReply(ticket.admin_reply || '');
-                          }}
-                          style={{ background: 'white', border: '1px solid rgb(220 216 210)', padding: '0.5rem 0.875rem', borderRadius: '10px', color: 'rgb(20 18 16)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
-                        >
+                        <button onClick={() => { setSelectedTicket(ticket); setStatus(ticket.status); setReply(ticket.admin_reply || ''); }}
+                          style={{ background: 'white', border: '1px solid rgb(220 216 210)', padding: '0.5rem 0.875rem', borderRadius: '10px', color: 'rgb(20 18 16)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
                           View
                         </button>
                       </td>
@@ -187,21 +205,26 @@ export const AdminDashboard = () => {
                   </p>
                 </div>
 
-                {selectedTicket.image_url && (
+                {selectedTicket.image_urls && selectedTicket.image_urls.length > 0 && (
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(160 155 148)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Attachment</div>
-                    <img src={selectedTicket.image_url} alt="Issue" style={{ width: '100%', borderRadius: '16px', border: '1px solid rgb(240 238 235)' }} />
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(160 155 148)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
+                      Attachments ({selectedTicket.image_urls.length})
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {selectedTicket.image_urls.map((url, idx) => (
+                        <div key={idx} style={{ width: '80px', height: '80px', borderRadius: '12px', border: '1px solid rgb(240 238 235)', overflow: 'hidden', cursor: 'pointer' }} onClick={() => window.open(url, '_blank')}>
+                          <img src={url} alt={`Issue ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'rgb(80 75 70)', marginBottom: '0.5rem' }}>Update Status</label>
-                    <select 
-                      value={status} 
-                      onChange={(e) => setStatus(e.target.value)}
-                      style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgb(220 216 210)', background: 'white', outline: 'none' }}
-                    >
+                    <select value={status} onChange={(e) => setStatus(e.target.value)}
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgb(220 216 210)', background: 'white', outline: 'none' }}>
                       <option value="Pending">Pending</option>
                       <option value="In Progress">In Progress</option>
                       <option value="Resolved">Resolved</option>
@@ -210,19 +233,12 @@ export const AdminDashboard = () => {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'rgb(80 75 70)', marginBottom: '0.5rem' }}>Admin Reply</label>
-                    <textarea 
-                      value={reply}
-                      onChange={(e) => setReply(e.target.value)}
-                      placeholder="Write your response here..."
-                      style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgb(220 216 210)', minHeight: '120px', fontFamily: 'inherit', outline: 'none' }}
-                    />
+                    <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write your response here..."
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgb(220 216 210)', minHeight: '120px', fontFamily: 'inherit', outline: 'none' }} />
                   </div>
 
-                  <button 
-                    type="submit" 
-                    disabled={updating}
-                    style={{ width: '100%', background: '#635BFF', color: 'white', padding: '1rem', borderRadius: '16px', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'opacity 0.2s' }}
-                  >
+                  <button type="submit" disabled={updating}
+                    style={{ width: '100%', background: '#635BFF', color: 'white', padding: '1rem', borderRadius: '16px', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'opacity 0.2s' }}>
                     {updating ? 'Saving...' : 'Save Changes'}
                   </button>
                 </form>
