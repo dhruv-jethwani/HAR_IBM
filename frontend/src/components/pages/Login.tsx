@@ -52,6 +52,7 @@ const Login: React.FC = () => {
       if (response.ok) {
         localStorage.setItem('auth_token', 'session_active');
         localStorage.setItem('user_email', result.email);
+		localStorage.setItem('user_name', result.name);
         
         // Use result.role from backend, or check against admin email as fallback
         const role = result.email === 'admin@gmail.com' ? 'admin' : (result.role || 'user');

@@ -6,7 +6,7 @@ interface NavItem {
   icon: React.ReactNode;
   active: boolean;
   onClick: () => void;
-  role: 'user' | 'admin' | 'both';
+  role: 'user' | 'admin';
 }
 
 interface SidebarProps {
@@ -15,7 +15,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
   const navigate = useNavigate();
-  const userRole = localStorage.getItem('user_role');
+  const userRole = localStorage.getItem('user_role') as 'user' | 'admin';
 
   const navItems: NavItem[] = [
     {
@@ -42,17 +42,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
       onClick: () => navigate('/history'),
     },
     {
-      label: 'Support',
-      role: 'user',
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-        </svg>
-      ),
-      active: activePage === 'Support',
-      onClick: () => navigate('/support'),
-    },
-    {
       label: 'Admin Panel',
       role: 'admin',
       icon: (
@@ -65,7 +54,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
     },
   ];
 
-  // Filter logic: Admins only see Admin items. Users only see User items.
   const filteredItems = navItems.filter(item => item.role === userRole);
 
   return (
@@ -84,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
         <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>HAR-Cloud</span>
       </div>
 
-      <div style={{ flexShrink: 0, flex: 1 }}>
+      <div style={{ flex: 1 }}>
         <p style={{ padding: '0 0.75rem', marginBottom: '0.5rem', fontSize: '0.625rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgb(180 175 168)' }}>
           {userRole === 'admin' ? 'Administration' : 'Platform'}
         </p>
@@ -118,30 +106,61 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
         </div>
       </div>
 
-      <div style={{ flexShrink: 0, paddingTop: '1rem', borderTop: '1px solid rgb(220 216 210)' }}>
-        <button
-          onClick={() => { localStorage.clear(); navigate('/login'); }}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '0.75rem 1rem',
-            border: '1px solid transparent',
-            background: 'transparent',
-            color: '#DC2626',
-            cursor: 'pointer',
-            borderRadius: '12px',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            fontFamily: "'DM Sans', sans-serif",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          Logout
-        </button>
+      {/* BOTTOM SECTION: Support and Logout */}
+      <div style={{ flexShrink: 0 }}>
+        {/* Report Problem Button - Only for regular users */}
+        {userRole === 'user' && (
+          <button
+            onClick={() => navigate('/support')}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '0.75rem 1rem',
+              background: activePage === 'Support' ? 'rgb(240 239 255)' : 'transparent',
+              color: activePage === 'Support' ? 'rgb(99 91 255)' : 'rgb(80 75 70)',
+              border: 'none',
+              borderRadius: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginBottom: '0.5rem',
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: '0.9rem',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Report Problem
+          </button>
+        )}
+
+        <div style={{ paddingTop: '1rem', borderTop: '1px solid rgb(220 216 210)' }}>
+          <button
+            onClick={() => { localStorage.clear(); navigate('/login'); }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '0.75rem 1rem',
+              border: 'none',
+              background: 'transparent',
+              color: '#DC2626',
+              cursor: 'pointer',
+              borderRadius: '12px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Logout
+          </button>
+        </div>
       </div>
     </aside>
   );

@@ -23,6 +23,7 @@ export const AdminDashboard = () => {
   const [updating, setUpdating] = useState(false);
   const userEmail = localStorage.getItem('user_email');
   const userRole = localStorage.getItem('user_role');
+  const userName = localStorage.getItem('user_name') || 'Admin'; // Retrieve Admin Name
 
   const API_BASE = import.meta.env.VITE_API_URL || 'https://har-backend-10x1.onrender.com';
 
@@ -77,7 +78,7 @@ export const AdminDashboard = () => {
         alert('Ticket updated successfully!');
         setReply('');
         setSelectedTicket(null);
-        fetchTickets();
+        fetchTickets(); // Reload list to see changes
       } else {
         alert('Failed to update ticket.');
       }
@@ -98,7 +99,6 @@ export const AdminDashboard = () => {
     }}>
       <Sidebar activePage="Admin" />
 
-      {/* Main Content */}
       <main style={{ flex: 1, overflowY: 'auto', padding: '2.5rem 4rem' }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
           <div>
@@ -108,7 +108,7 @@ export const AdminDashboard = () => {
             <p style={{ color: '#8C8780', marginTop: '0.5rem' }}>Oversee and respond to user-submitted issues.</p>
           </div>
           <div style={{ background: 'white', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid rgb(220 216 210)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgb(80 75 70)' }}>Admin</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgb(80 75 70)' }}>{userName}</span>
             <div style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%' }}></div>
           </div>
         </header>
@@ -117,7 +117,6 @@ export const AdminDashboard = () => {
           <div style={{ textAlign: 'center', padding: '5rem', color: '#635BFF', fontWeight: 700 }}>SYNCING REPORTS...</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: selectedTicket ? '1fr 400px' : '1fr', gap: '2rem' }}>
-            {/* Tickets Table */}
             <div style={{ background: 'white', borderRadius: '24px', border: '1px solid rgb(220 216 210)', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ background: 'rgb(250 249 247)', borderBottom: '1px solid rgb(220 216 210)' }}>
@@ -174,7 +173,6 @@ export const AdminDashboard = () => {
               </table>
             </div>
 
-            {/* Edit Panel */}
             {selectedTicket && (
               <div style={{ background: 'white', borderRadius: '24px', border: '1px solid rgb(220 216 210)', padding: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', alignSelf: 'start' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
