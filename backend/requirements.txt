@@ -3,6 +3,7 @@ flask-cors
 flask-sqlalchemy
 flask-login
 pymysql
+cloudinary
 requests
 python-dotenv
 pyjwt
