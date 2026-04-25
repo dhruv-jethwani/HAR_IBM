@@ -250,11 +250,19 @@ def upload_image():
                 "name": timestamp_str 
             }
             
+            # --- UPDATED SECTION 5 ---
             imgbb_res = requests.post("https://api.imgbb.com/1/upload", data=payload).json()
             
-            if 'data' not in imgbb_res:
-                return jsonify({"error": "ImgBB upload failed"}), 500
+            # 1. Log the response so you can see it in Render Logs
+            print(f"DEBUG: ImgBB Response -> {imgbb_res}")
+
+            # 2. Check if the upload actually succeeded
+            if not imgbb_res.get('success'):
+                # Get the specific error message from ImgBB if available
+                error_msg = imgbb_res.get('error', {}).get('message', 'Unknown ImgBB Error')
+                return jsonify({"error": f"ImgBB upload failed: {error_msg}"}), 500
                 
+            # 3. Safe access to the URL
             full_image_url = imgbb_res['data']['url']
 
             # 6. Save to MySQL
