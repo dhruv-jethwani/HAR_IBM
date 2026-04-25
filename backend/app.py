@@ -57,8 +57,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PA
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "connect_args": {
         "ssl": {
-            "ca": "/etc/ssl/certs/ca-certificates.crt",
-            "check_hostname": False  # Add this line
+            "check_hostname": False
         }
     }
 }
@@ -241,7 +240,7 @@ def upload_image():
             
             # 4. Read the file for ImgBB encoding
             with open(temp_path, "rb") as f:
-                base64_image = base64.b64encode(f.read())
+                base64_image = base64.b64encode(f.read()).decode('utf-8')
 
             # 5. Upload to ImgBB
             timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
