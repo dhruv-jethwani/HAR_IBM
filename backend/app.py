@@ -69,9 +69,12 @@ hashed_admin = generate_password_hash(ADMIN_PASSWORD) if ADMIN_PASSWORD else Non
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
 
 # FIXED: PyMySQL requires an empty dictionary for default SSL contexts
+# FIXED FOR RENDER/TIDB SERVERLESS:
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "connect_args": {
-        "ssl": {} 
+        "ssl": {
+            "ca": "/etc/ssl/certs/ca-certificates.crt"
+        }
     }
 }
 
