@@ -403,7 +403,7 @@ def admin_dashboard():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.route('/healthz')
+@app.route('/')
 def health_check():
     return "OK", 200
 
